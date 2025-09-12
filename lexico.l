@@ -13,6 +13,9 @@ letra       [a-zA-Z_]
 digito      [0-9]
 id          {letra}({letra}|{digito})*
 num_int     {digito}+
+relop       (">"|">="|"<"|"<="|"=="|"!=")
+op_arit     ("+"|"-"|"*"|"/"|"%")
+op_log      ("&&"|"||")
 ws          [ \t]+
 other       .
 
@@ -40,6 +43,18 @@ other       .
 
 "-"{num_int}             { printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO_NEGATIVO)\n", linha, coluna, yytext); coluna += yyleng; }
 {num_int}                { printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO)\n", linha, coluna, yytext); coluna += yyleng; }
+
+;                       { printf("Linha: %d, Coluna: %d -> %s (PONTO_E_VIRGULA)\n", linha, coluna, yytext); coluna += yyleng; }
+,                       { printf("Linha: %d, Coluna: %d -> %s (VIRGULA)\n", linha, coluna, yytext); coluna += yyleng; }
+\(                      { printf("Linha: %d, Coluna: %d -> %s (ABRE_PARENTESES)\n", linha, coluna, yytext); coluna += yyleng; }
+\)                      { printf("Linha: %d, Coluna: %d -> %s (FECHA_PARENTESES)\n", linha, coluna, yytext); coluna += yyleng; }
+\{                      { printf("Linha: %d, Coluna: %d -> %s (ABRE_CHAVES)\n", linha, coluna, yytext); coluna += yyleng; }
+\}                      { printf("Linha: %d, Coluna: %d -> %s (FECHA_CHAVES)\n", linha, coluna, yytext); coluna += yyleng; }
+
+{relop}                 { printf("Linha: %d, Coluna: %d -> %s (OP_RELACIONAL)\n", linha, coluna, yytext); coluna += yyleng; }
+{op_arit}               { printf("Linha: %d, Coluna: %d -> %s (OP_ARITMETICO)\n", linha, coluna, yytext); coluna += yyleng; }
+{op_log}                { printf("Linha: %d, Coluna: %d -> %s (OP_LOGICO)\n", linha, coluna, yytext); coluna += yyleng; }
+!                       { printf("Linha: %d, Coluna: %d -> %s (NOT)\n", linha, coluna, yytext); coluna += yyleng; }
 
 {other}                 { printf("Erro léxico %d: linha %d, coluna %d -> caractere inválido '%s'\n", ++erros, linha, coluna, yytext); coluna += yyleng; }
 
