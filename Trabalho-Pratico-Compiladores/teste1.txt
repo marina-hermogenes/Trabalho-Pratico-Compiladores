@@ -1,0 +1,43 @@
+%{
+/*---------------------------- Definitions ---------------------------- */
+#include <stdio.h>
+#include <string.h>
+
+int linha = 1;
+int coluna = 1;
+int erros = 0;
+char* ultimo_token = NULL;
+char* ultimo_lexema = NULL;
+
+typedef struct simbolo {
+    char *nome;
+    char *token;
+    int linha;
+    int coluna;
+    struct simbolo *prox;
+} Simbolo;
+
+Simbolo *tabela = NULL;
+
+void inserirSimbolo(char *nome, int linha, int coluna, char *token);
+void imprimirTabela();
+void setUltimo(const char *token, const char *lexema);
+void reportarErro(const char* msg, int linha, int coluna, const char* lexema, char* ultimo_token, char* ultimo_lexema);
+void processaComentario(char *texto, int tamanho);  
+
+%}
+
+%option noyywrap
+
+letra       [a-zA-Z_]
+digito      [0-9]
+id          {letra}({letra}|{digito})*
+num_int     {digito}+
+relop       (">"|">="|"<"|"<="|"=="|"!=")
+op_arit     ("+"|"-"|"*"|"/"|"%")
+op_log      ("&&"|"||")
+ws          [ \t]
+comentario    ("//".*)
+other       .
+
+%%

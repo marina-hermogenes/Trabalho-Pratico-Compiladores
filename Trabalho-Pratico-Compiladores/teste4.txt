@@ -1,0 +1,92 @@
+/*---------------------------- User subrotines ---------------------------- */
+/*Teste 
+    para *
+     comentario
+  \n
+  \*\*
+
+void inserirSimbolo(char *nome, int linha, int coluna, char *token) {
+    Simbolo *atual = tabela;
+    while (atual) {
+        if (strcmp(atual->nome, nome) == 0) return; // já existe, não insere
+        atual = atual->prox;
+    }
+
+    Simbolo *novo = (Simbolo*) malloc(sizeof(Simbolo));
+    novo->nome = strdup(nome);
+    novo->linha = linha;
+    novo->coluna = coluna;
+    novo->token = token;
+    novo->prox = NULL;
+    if (tabela == NULL) {
+        tabela = novo;
+    } else {
+        Simbolo *ultimo = tabela;
+        while (ultimo->prox) {
+            ultimo = ultimo->prox;
+        }
+        ultimo->prox = novo;
+    }
+}
+
+void imprimirTabela() {
+    printf("\n--- Tabela de Símbolos ---\n");
+    Simbolo *atual = tabela;
+    while (atual) {
+        printf("%s\t(Linha: %d, Coluna: %d, Token: %s)\n", atual->nome, atual->linha, atual->coluna, atual->token);
+        atual = atual->prox;
+    }
+}
+
+void reportarErro(const char* msg, int linha, int coluna, const char* lexema, char* ultimo_token, char* ultimo_lexema) {
+    printf("Erro léxico na linha %d, coluna %d: %s -> '%s'\n",
+           linha, coluna, msg, lexema);
+    if (strlen(ultimo_token) > 0) {
+        printf("   Obs: ocorreu logo após o token %s ('%s')\n",
+               ultimo_token, ultimo_lexema);
+    }
+}
+
+void setUltimo(const char *token, const char *lexema) {
+    if (ultimo_token) {
+        free(ultimo_token);
+        ultimo_token = NULL;
+    }
+    if (ultimo_lexema) {
+        free(ultimo_lexema);
+        ultimo_lexema = NULL;
+    }
+    if (token) ultimo_token = strdup(token);
+    if (lexema) ultimo_lexema = strdup(lexema);
+}
+
+void processaComentario(char *texto, int tamanho) {
+    for (int i = 0; i < tamanho; i++) {
+        if (texto[i] == '\n') {
+            linha++;
+            coluna = 1;
+        } else {
+            coluna++;
+        }
+    }
+}
+
+
+
+
+int main(int argc, char *argv[]){
+    if (argc < 2) {
+        fprintf(stderr, "Uso: %s <arquivo>\n", argv[0]);
+        return 1;
+    }
+    yyin = fopen(argv[1], "r");
+    if (!yyin) {
+        perror(argv[1]);
+        return 1;
+    }
+    yyout = stdout;
+    yylex();
+    fclose(yyin);
+    imprimirTabela();
+    return 0;
+}

@@ -1,0 +1,32 @@
+"-"{num_int}            { setUltimo("NUM_INTEIRO_NEGATIVO", yytext); printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO_NEGATIVO)\n", linha, coluna, yytext); coluna += yyleng; }
+{num_int}               { setUltimo("NUM_INTEIRO", yytext); printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO)\n", linha, coluna, yytext); coluna += yyleng; }
+
+;                       { setUltimo("PONTO_E_VIRGULA", yytext); printf("Linha: %d, Coluna: %d -> %s (PONTO_E_VIRGULA)\n", linha, coluna, yytext); coluna += yyleng; }
+,                       { setUltimo("VIRGULA", yytext); printf("Linha: %d, Coluna: %d -> %s (VIRGULA)\n", linha, coluna, yytext); coluna += yyleng; }
+\(                      { setUltimo("ABRE_PARENTESES", yytext); printf("Linha: %d, Coluna: %d -> %s (ABRE_PARENTESES)\n", linha, coluna, yytext); coluna += yyleng; }
+\)                      { setUltimo("FECHA_PARENTESES", yytext); printf("Linha: %d, Coluna: %d -> %s (FECHA_PARENTESES)\n", linha, coluna, yytext); coluna += yyleng; }
+\{                      { setUltimo("ABRE_CHAVES", yytext); printf("Linha: %d, Coluna: %d -> %s (ABRE_CHAVES)\n", linha, coluna, yytext); coluna += yyleng; }
+\}                      { setUltimo("FECHA_CHAVES", yytext); printf("Linha: %d, Coluna: %d -> %s (FECHA_CHAVES)\n", linha, coluna, yytext); coluna += yyleng; }
+
+{relop}                 { setUltimo("OP_RELACIONAL", yytext); printf("Linha: %d, Coluna: %d -> %s (OP_RELACIONAL)\n", linha, coluna, yytext); coluna += yyleng; }
+{op_arit}               { setUltimo("OP_ARITMETICO", yytext); printf("Linha: %d, Coluna: %d -> %s (OP_ARITMETICO)\n", linha, coluna, yytext); coluna += yyleng; }
+{op_log}                { setUltimo("OP_LOGICO", yytext); printf("Linha: %d, Coluna: %d -> %s (OP_LOGICO)\n", linha, coluna, yytext); coluna += yyleng; }
+!                       { setUltimo("NOT", yytext); printf("Linha: %d, Coluna: %d -> %s (NOT)\n", linha, coluna, yytext); coluna += yyleng; }
+"="                     { setUltimo("OP_ATRIBUICAO", yytext); printf("Linha: %d, Coluna: %d -> %s (OP_ATRIBUICAO)\n", linha, coluna, yytext); coluna += yyleng; }
+
+
+{digito}{id} {
+    reportarErro("Caractere inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema); coluna += yyleng;
+    printf("   Identificadores não começam com digito '%s'\n",yytext);
+}
+
+
+{digito}+{letra} {
+    reportarErro("Caractere inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema); coluna += yyleng;
+    printf("   Número malformado '%s'\n",yytext);
+}
+
+
+{other} { reportarErro("Caractere inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema); coluna += yyleng; }
+
+%%
