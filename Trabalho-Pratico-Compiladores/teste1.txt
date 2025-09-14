@@ -1,43 +1,85 @@
-%{
-/*---------------------------- Definitions ---------------------------- */
-#include <stdio.h>
-#include <string.h>
+// --- Arquivo de teste para tokens válidos, estrutura geral, erros léxicos específicos e casos especiais ---
 
-int linha = 1;
-int coluna = 1;
-int erros = 0;
-char* ultimo_token = NULL;
-char* ultimo_lexema = NULL;
+/*
+  Este programa de teste verifica 
+  a maioria dos tokens em um contexto plausível.
+*/
 
-typedef struct simbolo {
-    char *nome;
-    char *token;
-    int linha;
-    int coluna;
-    struct simbolo *prox;
-} Simbolo;
+int contador = 10;
+bool flag_loop = true;
 
-Simbolo *tabela = NULL;
+while (contador > 0 && flag_loop == true) {
+    if (contador % 2 == 0) {
+        print contador;
+    } else {
+        read flag_loop; // Apenas para usar o token
+    }
+    contador = contador - 1;
+}
 
-void inserirSimbolo(char *nome, int linha, int coluna, char *token);
-void imprimirTabela();
-void setUltimo(const char *token, const char *lexema);
-void reportarErro(const char* msg, int linha, int coluna, const char* lexema, char* ultimo_token, char* ultimo_lexema);
-void processaComentario(char *texto, int tamanho);  
+// Teste de operadores e identificadores com _
+int _resultado_final = -1;
+if (!flag_loop) {
+    _resultado_final = (100 * 2) / 5;
+}
 
-%}
+// Identificador inválido (começando com número)
+int 1var = 10;
 
-%option noyywrap
+// Operadores relacionais malformados
+bool resultado;
+resultado = 1 => 2;
+resultado = 3 =< 4;
+resultado = 5 =! 6;
 
-letra       [a-zA-Z_]
-digito      [0-9]
-id          {letra}({letra}|{digito})*
-num_int     {digito}+
-relop       (">"|">="|"<"|"<="|"=="|"!=")
-op_arit     ("+"|"-"|"*"|"/"|"%")
-op_log      ("&&"|"||")
-ws          [ \t]
-comentario    ("//".*)
-other       .
+// Caracteres inválidos genéricos
+int x = 100 @ 200;
+bool y = #true;
+print $variavel;
 
-%%
+// Erro CRÍTICO: Comentário de bloco não fechado
+/*
+  Este comentário é aberto...
+
+  ...mas o arquivo termina antes que ele seja fechado.
+  Deve gerar um erro específico no final da análise.
+
+// Codigo sem espaços ou quebras de linha
+int a=10;if(a>0)print(a);
+
+// Comentarios em lugares inesperados
+int b=/*comentário no meio da atribuição*/1;
+if(b>0/**/)print(b);
+
+// Palavras-chave como parte de identificadores
+int if_contador=0;
+bool while_flag=true;
+
+// Operadores juntos
+int c = 10;
+c = c--1; // Deve ser lido como c, -, -1
+c = 5+-2; // Deve ser lido como 5, +, -2
+
+// Múltiplos operadores relacionais
+// O analisador léxico não se preocupa com a semantica, apenas com os tokens
+bool d = 1 < 2 > 0; // Deve ler 1, <, 2, >, 0
+
+// Codigo sem espaços ou quebras de linha
+int a=10;if(a>0)print(a);
+
+// Comentarios em lugares inesperados
+int b=/*comentário no meio da atribuição*/1;
+if(b>0/**/)print(b);
+
+// Palavras-chave como parte de identificadores
+int if_contador=0;
+bool while_flag=true;
+
+// Operadores juntos
+int c = 10;
+c = c--1; // Deve ser lido como c, -, -1
+c = 5+-2; // Deve ser lido como 5, +, -2
+
+// Múltiplos operadores relacionais
+// O analisador léxico não se preocupa com a semantica, apenas com os tokens
+bool d = 1 < 2 > 0; // Deve ler 1, <, 2, >, 0

@@ -1,34 +1,38 @@
 %{
-/*---------------------------- Definitions ---------------------------- */
+/*---------------------------- Definições ---------------------------- */
 #include <stdio.h>
 #include <string.h>
 
 int linha = 1;
 int coluna = 1;
-int erros = 0;
-char* ultimo_token = NULL;
-char* ultimo_lexema = NULL;
+int erros = 0; // Quantidade de erros léxicos encontrados
+char* ultimo_token = NULL; // Último token que foi encontrado
+char* ultimo_lexema = NULL; // Último lexema que foi encontrado
 
-typedef struct simbolo {
+typedef struct simbolo { // Tabela de símbolos (lista encadeada) 
     char *nome;
     char *token;
     int linha;
     int coluna;
     struct simbolo *prox;
-} Simbolo;
+} Simbolo; 
 
-Simbolo *tabela = NULL;
+Simbolo *tabela = NULL; // Tabela inicialmente vazia
 
 void inserirSimbolo(char *nome, int linha, int coluna, char *token);
 void imprimirTabela();
 void setUltimo(const char *token, const char *lexema);
-void reportarErro(const char* msg, int linha, int coluna, const char* lexema, char* ultimo_token, char* ultimo_lexema);
+void reportarErro(const char* msg, int linha, int coluna, const char* lexema, char* ultimo_token, char* ultimo_lexema, int erro);
 void processaComentario(char *texto, int tamanho);  
+void liberarTabela();
 
 %}
 
 %option noyywrap
 
+%{
+    /* Definição dos padrões léxicos */   
+%}
 letra       [a-zA-Z_]
 digito      [0-9]
 id          {letra}({letra}|{digito})*
@@ -37,13 +41,17 @@ relop       (">"|">="|"<"|"<="|"=="|"!=")
 op_arit     ("+"|"-"|"*"|"/"|"%")
 op_log      ("&&"|"||")
 ws          [ \t]
-comentario    ("//".*)
+comentario  \/\/[^\n]*
 other       .
+
 
 %%
 %{
-/*---------------------------- Rules ---------------------------- */
+/*---------------------------- Regras ---------------------------- */
+%}
 
+%{
+//Regras de reconhecimento de espaços em branco, novas linhas e comentários
 %}
 
 {ws}                    { coluna += yyleng; }
@@ -54,7 +62,9 @@ other       .
     processaComentario(yytext, yyleng);
 }
 
-
+%{
+//Regras de reconhecimento de palavras reservadas, id, números, pontuação e operadores
+%}
 
 "int"                   { setUltimo("TIPO_INT", yytext); printf("Linha: %d, Coluna: %d -> %s (TIPO_INT)\n", linha, coluna, yytext); coluna += yyleng; }
 "bool"                  { setUltimo("TIPO_BOOL", yytext); printf("Linha: %d, Coluna: %d -> %s (TIPO_BOOL)\n", linha, coluna, yytext); coluna += yyleng; }
@@ -85,24 +95,53 @@ other       .
 !                       { setUltimo("NOT", yytext); printf("Linha: %d, Coluna: %d -> %s (NOT)\n", linha, coluna, yytext); coluna += yyleng; }
 "="                     { setUltimo("OP_ATRIBUICAO", yytext); printf("Linha: %d, Coluna: %d -> %s (OP_ATRIBUICAO)\n", linha, coluna, yytext); coluna += yyleng; }
 
+%{ 
+// Erros específicos 
+%}
 
-{digito}{id} {
-    reportarErro("Caractere inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema); coluna += yyleng;
-    printf("   Identificadores não começam com digito '%s'\n",yytext);
-}
+"=>"                    {
+                            reportarErro("Operador desconhecido", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros);
+                            printf("   Dica: Você quis dizer '>='?\n");
+                            erros++;
+                            coluna += yyleng;
+                        }
 
+"=<"                    {
+                            reportarErro("Operador desconhecido", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros);
+                            printf("   Dica: Você quis dizer '<='?\n");
+                            erros++;
+                            coluna += yyleng;
+                        }
 
-{digito}+{letra} {
-    reportarErro("Caractere inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema); coluna += yyleng;
-    printf("   Número malformado '%s'\n",yytext);
-}
+"=!"                    {
+                            reportarErro("Operador desconhecido", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros);
+                            printf("   Dica: Você quis dizer '!='?\n");
+                            erros++;
+                            coluna += yyleng;
+                        }
 
+{digito}{id}            {
+                            reportarErro("Identificador inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros); coluna += yyleng; erros++;
+                            printf("  Dica: Identificadores não começam com digito.\n");
+                        }
 
-{other} { reportarErro("Caractere inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema); coluna += yyleng; }
+"/*"([^*]|\n|(\*+([^*/]|\n)))* {
+                            reportarErro("Comentário inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros); coluna += yyleng; erros++;
+                            printf("   Comentários devem terminar com */\n");
+                            coluna += yyleng;
+                        }
+
+%{
+// Erros gerais
+%}
+
+{other} { reportarErro("Caractere inválido", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros); coluna += yyleng; erros++; }
+
 
 %%
-/*---------------------------- User subrotines ---------------------------- */
+/*---------------------------- Subrotinas ---------------------------- */
 
+// Insere novo ID na tabela de símbolos
 void inserirSimbolo(char *nome, int linha, int coluna, char *token) {
     Simbolo *atual = tabela;
     while (atual) {
@@ -127,6 +166,8 @@ void inserirSimbolo(char *nome, int linha, int coluna, char *token) {
     }
 }
 
+// Imprime tabela de símbolos
+// Imprime a primeira aparição de cada identificador
 void imprimirTabela() {
     printf("\n--- Tabela de Símbolos ---\n");
     Simbolo *atual = tabela;
@@ -136,15 +177,25 @@ void imprimirTabela() {
     }
 }
 
-void reportarErro(const char* msg, int linha, int coluna, const char* lexema, char* ultimo_token, char* ultimo_lexema) {
-    printf("Erro léxico na linha %d, coluna %d: %s -> '%s'\n",
-           linha, coluna, msg, lexema);
-    if (strlen(ultimo_token) > 0) {
-        printf("   Obs: ocorreu logo após o token %s ('%s')\n",
+// Imprime mensagem de erro
+void reportarErro(const char* msg, int linha, int coluna,
+                  const char* lexema, char* ultimo_token,
+                  char* ultimo_lexema, int erro) {
+    printf("Erro léxico na linha %d, coluna %d: %s",
+           linha, coluna, msg);
+
+    if (lexema && strlen(lexema) > 0)
+        printf(" -> \"%s\"\n", lexema);   // mostra com aspas duplas
+    else
+        printf(" -> ε (vazio)\n");        // epsilon quando não tem nada
+
+    if (ultimo_token && ultimo_lexema && strlen(ultimo_token) > 0) {
+        printf("   Obs: ocorreu logo após o token %s (\"%s\")\n",
                ultimo_token, ultimo_lexema);
     }
 }
 
+// Define qual foi o último token e o último lexema encontrado
 void setUltimo(const char *token, const char *lexema) {
     if (ultimo_token) {
         free(ultimo_token);
@@ -158,6 +209,7 @@ void setUltimo(const char *token, const char *lexema) {
     if (lexema) ultimo_lexema = strdup(lexema);
 }
 
+// Processa comentários de multíplas linhas para contar linhas e colunas corretamente
 void processaComentario(char *texto, int tamanho) {
     for (int i = 0; i < tamanho; i++) {
         if (texto[i] == '\n') {
@@ -169,7 +221,17 @@ void processaComentario(char *texto, int tamanho) {
     }
 }
 
-
+// Liberando a memória ocupada pela tabela de símbolos
+void liberarTabela() {
+    Simbolo *atual = tabela;
+    while (atual) {
+        Simbolo *prox = atual->prox;
+        free(atual->nome);
+        free(atual);
+        atual = prox;
+    }
+    tabela = NULL;
+}
 
 int main(int argc, char *argv[]){
     if (argc < 2) {
@@ -185,5 +247,6 @@ int main(int argc, char *argv[]){
     yylex();
     fclose(yyin);
     imprimirTabela();
+    liberarTabela();
     return 0;
 }
