@@ -5,7 +5,7 @@
   a maioria dos tokens em um contexto plausível.
 */
 
-int contador = 10;
+int contador = 10, inteiro = 6;
 bool flag_loop = true;
 
 while (contador > 0 && flag_loop == true) {
@@ -37,49 +37,49 @@ int x = 100 @ 200;
 bool y = #true;
 print $variavel;
 
+// Codigo sem espaços ou quebras de linha
+int a=10;if(a>0)print(a);
+
+// Comentarios em lugares inesperados
+int b=/*comentário no meio da atribuição*/1;
+if(b>0/**/)print(b);
+
+// Palavras-chave como parte de identificadores
+int if_contador=0;
+bool while_flag=true;
+
+// Operadores juntos
+int c = 10;
+c = c--1; // Deve ser lido como c, -, -1
+c = 5+-2; // Deve ser lido como 5, +, -2
+
+// Múltiplos operadores relacionais
+// O analisador léxico não se preocupa com a semantica, apenas com os tokens
+bool d = 1 < 2 > 0; // Deve ler 1, <, 2, >, 0
+
+// Codigo sem espaços ou quebras de linha
+int a=10;if(a>0)print(a);
+
+// Comentarios em lugares inesperados
+int b=/*comentário no meio da atribuição*/1;
+if(b>0/**/)print(b);
+
+// Palavras-chave como parte de identificadores
+int if_contador=0;
+bool while_flag=true;
+
+// Operadores juntos
+int c = 10;
+c = c--1; // Deve ser lido como c, -, -1
+c = 5+-2; // Deve ser lido como 5, +, -2
+
+// Múltiplos operadores relacionais
+// O analisador léxico não se preocupa com a semantica, apenas com os tokens
+bool d = 1 < 2 > 0; // Deve ler 1, <, 2, >, 0
+
 // Erro CRÍTICO: Comentário de bloco não fechado
 /*
   Este comentário é aberto...
 
   ...mas o arquivo termina antes que ele seja fechado.
   Deve gerar um erro específico no final da análise.
-
-// Codigo sem espaços ou quebras de linha
-int a=10;if(a>0)print(a);
-
-// Comentarios em lugares inesperados
-int b=/*comentário no meio da atribuição*/1;
-if(b>0/**/)print(b);
-
-// Palavras-chave como parte de identificadores
-int if_contador=0;
-bool while_flag=true;
-
-// Operadores juntos
-int c = 10;
-c = c--1; // Deve ser lido como c, -, -1
-c = 5+-2; // Deve ser lido como 5, +, -2
-
-// Múltiplos operadores relacionais
-// O analisador léxico não se preocupa com a semantica, apenas com os tokens
-bool d = 1 < 2 > 0; // Deve ler 1, <, 2, >, 0
-
-// Codigo sem espaços ou quebras de linha
-int a=10;if(a>0)print(a);
-
-// Comentarios em lugares inesperados
-int b=/*comentário no meio da atribuição*/1;
-if(b>0/**/)print(b);
-
-// Palavras-chave como parte de identificadores
-int if_contador=0;
-bool while_flag=true;
-
-// Operadores juntos
-int c = 10;
-c = c--1; // Deve ser lido como c, -, -1
-c = 5+-2; // Deve ser lido como 5, +, -2
-
-// Múltiplos operadores relacionais
-// O analisador léxico não se preocupa com a semantica, apenas com os tokens
-bool d = 1 < 2 > 0; // Deve ler 1, <, 2, >, 0

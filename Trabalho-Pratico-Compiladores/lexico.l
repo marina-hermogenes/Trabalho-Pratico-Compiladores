@@ -6,10 +6,12 @@
 int linha = 1;
 int coluna = 1;
 int erros = 0; // Quantidade de erros léxicos encontrados
+int countIndiceID = 0; // Contador para o índice dos identificadores na tabela de símbolos
 char* ultimo_token = NULL; // Último token que foi encontrado
 char* ultimo_lexema = NULL; // Último lexema que foi encontrado
 
 typedef struct simbolo { // Tabela de símbolos (lista encadeada) 
+    int indiceID;
     char *nome;
     char *token;
     int linha;
@@ -19,7 +21,7 @@ typedef struct simbolo { // Tabela de símbolos (lista encadeada)
 
 Simbolo *tabela = NULL; // Tabela inicialmente vazia
 
-void inserirSimbolo(char *nome, int linha, int coluna, char *token);
+int inserirSimbolo(char *nome, int linha, int coluna, char *token);
 void imprimirTabela();
 void setUltimo(const char *token, const char *lexema);
 void reportarErro(const char* msg, int linha, int coluna, const char* lexema, char* ultimo_token, char* ultimo_lexema, int erro);
@@ -77,7 +79,7 @@ other       .
 "true"                  { setUltimo("TRUE", yytext); printf("Linha: %d, Coluna: %d -> %s (TRUE)\n", linha, coluna, yytext); coluna += yyleng; }
 "false"                 { setUltimo("FALSE", yytext); printf("Linha: %d, Coluna: %d -> %s (FALSE)\n", linha, coluna, yytext); coluna += yyleng; }
 
-{id}                    { setUltimo("IDENTIFICADOR", yytext); printf("Linha: %d, Coluna: %d -> %s (IDENTIFICADOR)\n", linha, coluna, yytext); inserirSimbolo(yytext, linha, coluna, "IDENTIFICADOR"); coluna += yyleng; }
+{id}                    { setUltimo("IDENTIFICADOR", yytext); printf("Linha: %d, Coluna: %d -> %s (IDENTIFICADOR), Índice na tabela de símbolos: %d\n", linha, coluna, yytext, inserirSimbolo(yytext, linha, coluna, "IDENTIFICADOR")); coluna += yyleng; }
 
 "-"{num_int}            { setUltimo("NUM_INTEIRO_NEGATIVO", yytext); printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO_NEGATIVO)\n", linha, coluna, yytext); coluna += yyleng; }
 {num_int}               { setUltimo("NUM_INTEIRO", yytext); printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO)\n", linha, coluna, yytext); coluna += yyleng; }
@@ -142,14 +144,16 @@ other       .
 /*---------------------------- Subrotinas ---------------------------- */
 
 // Insere novo ID na tabela de símbolos
-void inserirSimbolo(char *nome, int linha, int coluna, char *token) {
+int inserirSimbolo(char *nome, int linha, int coluna, char *token) {
     Simbolo *atual = tabela;
     while (atual) {
-        if (strcmp(atual->nome, nome) == 0) return; // já existe, não insere
+        if (strcmp(atual->nome, nome) == 0) return(atual->indiceID); // já existe, não insere e retorna seu índice
         atual = atual->prox;
     }
 
     Simbolo *novo = (Simbolo*) malloc(sizeof(Simbolo));
+    countIndiceID++;
+    novo->indiceID = countIndiceID;
     novo->nome = strdup(nome);
     novo->linha = linha;
     novo->coluna = coluna;
@@ -164,15 +168,22 @@ void inserirSimbolo(char *nome, int linha, int coluna, char *token) {
         }
         ultimo->prox = novo;
     }
+    return(novo->indiceID);
 }
 
 // Imprime tabela de símbolos
-// Imprime a primeira aparição de cada identificador
+// Imprime a posição da primeira aparição de cada identificador
 void imprimirTabela() {
-    printf("\n--- Tabela de Símbolos ---\n");
+    printf("\n===== TABELA DE SÍMBOLOS =====\n\n");
+
+    printf("%-10s %-20s %-20s %-10s %-10s\n",
+           "Índice", "Lexema", "Token", "Linha", "Coluna");
+    printf("---------------------------------------------------------------------------\n");
+
     Simbolo *atual = tabela;
     while (atual) {
-        printf("%s\t(Linha: %d, Coluna: %d, Token: %s)\n", atual->nome, atual->linha, atual->coluna, atual->token);
+        printf("%-10d %-20s %-20s %-10d %-10d\n",
+        atual->indiceID, atual->nome, atual->token, atual->linha, atual->coluna);
         atual = atual->prox;
     }
 }
