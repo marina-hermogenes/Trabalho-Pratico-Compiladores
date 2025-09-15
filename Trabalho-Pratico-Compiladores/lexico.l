@@ -185,9 +185,9 @@ void reportarErro(const char* msg, int linha, int coluna,
            linha, coluna, msg);
 
     if (lexema && strlen(lexema) > 0)
-        printf(" -> \"%s\"\n", lexema);   // mostra com aspas duplas
+        printf(" -> \"%s\"\n", lexema);   
     else
-        printf(" -> ε (vazio)\n");        // epsilon quando não tem nada
+        printf(" -> ε (vazio)\n");        
 
     if (ultimo_token && ultimo_lexema && strlen(ultimo_token) > 0) {
         printf("   Obs: ocorreu logo após o token %s (\"%s\")\n",
