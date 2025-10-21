@@ -1,0 +1,12 @@
+int i, t, tua;
+
+{
+    eu = teu;
+    sua = teu;
+    {
+        eu = teu;
+    }
+}
+
+read(s);
+print(s, xixa);
