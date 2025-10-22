@@ -1,7 +1,9 @@
-%define parse.error verbose
 %{
     #include <stdio.h>
     #include <stdlib.h>
+
+    extern int linha;
+    extern int coluna;
 
     int yylex(void);
     void yyerror(const char *s);
@@ -23,20 +25,31 @@ comandos
     |
     ;
 
+///////////////// ALTERAR AQUI /////////////////////
+
 comando
-    : declaracao
-    | atribuicao
+    : declaracao PONTO_E_VIRGULA
+    | atribuicao PONTO_E_VIRGULA
     | bloco
-    | print
-    | read
+ //   | print PONTO_E_VIRGULA
+ //   | read PONTO_E_VIRGULA
+    | error PONTO_E_VIRGULA {fprintf(stderr, "→ Comando inválido na linha %d.\n", linha); yyerrok;}
     ;
 
+////////////////////////////////////////////////////
+
 declaracao
-    : tipo IDENTIFICADOR maisDecl PONTO_E_VIRGULA 
+    : tipo declaracoes
+    ;
+
+declaracoes
+    : atribuicao maisDecl
+    | IDENTIFICADOR maisDecl
     ;
 
 maisDecl
-    : VIRGULA IDENTIFICADOR maisDecl
+    : VIRGULA atribuicao maisDecl
+    | VIRGULA IDENTIFICADOR maisDecl
     |
     ;
 
@@ -46,22 +59,32 @@ tipo
     ;
 
 atribuicao
-    : IDENTIFICADOR OP_ATRIBUICAO IDENTIFICADOR PONTO_E_VIRGULA
+    : IDENTIFICADOR OP_ATRIBUICAO expr
     ;
+
+
+//////////////////////////////////////// ALTERAR ISSO AQUI //////////////////////////////////
+
+expr
+    : IDENTIFICADOR
+    | NUM_INTEIRO
+    | NUM_INTEIRO_NEGATIVO
+    ;
+
+
+////////////////////////////////////////
+
 
 bloco
     : ABRE_CHAVES comandos FECHA_CHAVES
     ;
-
-print 
-    : PRINT ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
-
-read
-    : READ ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Erro sintático: %s\n", s);
+    extern int linha;
+    extern int coluna;
+    extern char *yytext; // vem do Flex
+    fprintf(stderr, "Erro sintático na linha %d, coluna %d, iniciando com '%s': %s\n", linha, coluna-1, yytext, s);
 }
 
 int main(void) {

@@ -3,14 +3,16 @@ Terminais sem uso na gramática
     IF
     ELSE
     WHILE
+    PRINT
+    READ
     TRUE
     FALSE
-    NUM_INTEIRO
-    NUM_INTEIRO_NEGATIVO
     OP_RELACIONAL
     OP_ARITMETICO
     OP_LOGICO
     NOT
+    ABRE_PARENTESES
+    FECHA_PARENTESES
 
 
 Gramática
@@ -22,56 +24,59 @@ Gramática
     2 comandos: comando comandos
     3         | ε
 
-    4 comando: declaracao
-    5        | atribuicao
+    4 comando: declaracao PONTO_E_VIRGULA
+    5        | atribuicao PONTO_E_VIRGULA
     6        | bloco
-    7        | print
-    8        | read
+    7        | error PONTO_E_VIRGULA
 
-    9 declaracao: tipo IDENTIFICADOR maisDecl PONTO_E_VIRGULA
+    8 declaracao: tipo declaracoes
 
-   10 maisDecl: VIRGULA IDENTIFICADOR maisDecl
-   11         | ε
+    9 declaracoes: atribuicao maisDecl
+   10            | IDENTIFICADOR maisDecl
 
-   12 tipo: TIPO_INT
-   13     | TIPO_BOOL
+   11 maisDecl: VIRGULA atribuicao maisDecl
+   12         | VIRGULA IDENTIFICADOR maisDecl
+   13         | ε
 
-   14 atribuicao: IDENTIFICADOR OP_ATRIBUICAO IDENTIFICADOR PONTO_E_VIRGULA
+   14 tipo: TIPO_INT
+   15     | TIPO_BOOL
 
-   15 bloco: ABRE_CHAVES comandos FECHA_CHAVES
+   16 atribuicao: IDENTIFICADOR OP_ATRIBUICAO expr
 
-   16 print: PRINT ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
+   17 expr: IDENTIFICADOR
+   18     | NUM_INTEIRO
+   19     | NUM_INTEIRO_NEGATIVO
 
-   17 read: READ ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
+   20 bloco: ABRE_CHAVES comandos FECHA_CHAVES
 
 
 Terminais, com as regras onde eles aparecem
 
     $end (0) 0
-    error (256)
-    TIPO_INT (258) 12
-    TIPO_BOOL (259) 13
+    error (256) 7
+    TIPO_INT (258) 14
+    TIPO_BOOL (259) 15
     IF (260)
     ELSE (261)
     WHILE (262)
-    PRINT (263) 16
-    READ (264) 17
+    PRINT (263)
+    READ (264)
     TRUE (265)
     FALSE (266)
-    IDENTIFICADOR (267) 9 10 14 16 17
-    NUM_INTEIRO (268)
-    NUM_INTEIRO_NEGATIVO (269)
-    OP_ATRIBUICAO (270) 14
+    IDENTIFICADOR (267) 10 12 16 17
+    NUM_INTEIRO (268) 18
+    NUM_INTEIRO_NEGATIVO (269) 19
+    OP_ATRIBUICAO (270) 16
     OP_RELACIONAL (271)
     OP_ARITMETICO (272)
     OP_LOGICO (273)
     NOT (274)
-    ABRE_PARENTESES (275) 16 17
-    FECHA_PARENTESES (276) 16 17
-    ABRE_CHAVES (277) 15
-    FECHA_CHAVES (278) 15
-    PONTO_E_VIRGULA (279) 9 14 16 17
-    VIRGULA (280) 10
+    ABRE_PARENTESES (275)
+    FECHA_PARENTESES (276)
+    ABRE_CHAVES (277) 20
+    FECHA_CHAVES (278) 20
+    PONTO_E_VIRGULA (279) 4 5 7
+    VIRGULA (280) 11 12
 
 
 Não terminais com as regras onde eles aparecem
@@ -83,366 +88,344 @@ Não terminais com as regras onde eles aparecem
         à direita: 0
     comandos (28)
         à esquerda: 2 3
-        à direita: 1 2 15
+        à direita: 1 2 20
     comando (29)
-        à esquerda: 4 5 6 7 8
+        à esquerda: 4 5 6 7
         à direita: 2
     declaracao (30)
-        à esquerda: 9
+        à esquerda: 8
         à direita: 4
-    maisDecl (31)
-        à esquerda: 10 11
-        à direita: 9 10 16 17
-    tipo (32)
-        à esquerda: 12 13
-        à direita: 9
-    atribuicao (33)
-        à esquerda: 14
-        à direita: 5
-    bloco (34)
-        à esquerda: 15
-        à direita: 6
-    print (35)
-        à esquerda: 16
-        à direita: 7
-    read (36)
-        à esquerda: 17
+    declaracoes (31)
+        à esquerda: 9 10
         à direita: 8
+    maisDecl (32)
+        à esquerda: 11 12 13
+        à direita: 9 10 11 12
+    tipo (33)
+        à esquerda: 14 15
+        à direita: 8
+    atribuicao (34)
+        à esquerda: 16
+        à direita: 5 9 11
+    expr (35)
+        à esquerda: 17 18 19
+        à direita: 16
+    bloco (36)
+        à esquerda: 20
+        à direita: 6
 
 
 Estado 0
 
     0 $accept: • programa $end
 
-    TIPO_INT       deslocar, e ir ao estado 1
-    TIPO_BOOL      deslocar, e ir ao estado 2
-    PRINT          deslocar, e ir ao estado 3
-    READ           deslocar, e ir ao estado 4
-    IDENTIFICADOR  deslocar, e ir ao estado 5
-    ABRE_CHAVES    deslocar, e ir ao estado 6
+    error          deslocar, e ir ao estado 1
+    TIPO_INT       deslocar, e ir ao estado 2
+    TIPO_BOOL      deslocar, e ir ao estado 3
+    IDENTIFICADOR  deslocar, e ir ao estado 4
+    ABRE_CHAVES    deslocar, e ir ao estado 5
 
-    $padrão  reduzir usando a regra 3 (comandos)
+    $end  reduzir usando a regra 3 (comandos)
 
-    programa    ir ao estado 7
-    comandos    ir ao estado 8
-    comando     ir ao estado 9
-    declaracao  ir ao estado 10
-    tipo        ir ao estado 11
-    atribuicao  ir ao estado 12
-    bloco       ir ao estado 13
-    print       ir ao estado 14
-    read        ir ao estado 15
+    programa    ir ao estado 6
+    comandos    ir ao estado 7
+    comando     ir ao estado 8
+    declaracao  ir ao estado 9
+    tipo        ir ao estado 10
+    atribuicao  ir ao estado 11
+    bloco       ir ao estado 12
 
 
 Estado 1
 
-   12 tipo: TIPO_INT •
+    7 comando: error • PONTO_E_VIRGULA
 
-    $padrão  reduzir usando a regra 12 (tipo)
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 13
 
 
 Estado 2
 
-   13 tipo: TIPO_BOOL •
+   14 tipo: TIPO_INT •
 
-    $padrão  reduzir usando a regra 13 (tipo)
+    $padrão  reduzir usando a regra 14 (tipo)
 
 
 Estado 3
 
-   16 print: PRINT • ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
+   15 tipo: TIPO_BOOL •
 
-    ABRE_PARENTESES  deslocar, e ir ao estado 16
+    $padrão  reduzir usando a regra 15 (tipo)
 
 
 Estado 4
 
-   17 read: READ • ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
+   16 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
 
-    ABRE_PARENTESES  deslocar, e ir ao estado 17
+    OP_ATRIBUICAO  deslocar, e ir ao estado 14
 
 
 Estado 5
 
-   14 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO IDENTIFICADOR PONTO_E_VIRGULA
+   20 bloco: ABRE_CHAVES • comandos FECHA_CHAVES
 
-    OP_ATRIBUICAO  deslocar, e ir ao estado 18
+    error          deslocar, e ir ao estado 1
+    TIPO_INT       deslocar, e ir ao estado 2
+    TIPO_BOOL      deslocar, e ir ao estado 3
+    IDENTIFICADOR  deslocar, e ir ao estado 4
+    ABRE_CHAVES    deslocar, e ir ao estado 5
+
+    FECHA_CHAVES  reduzir usando a regra 3 (comandos)
+
+    comandos    ir ao estado 15
+    comando     ir ao estado 8
+    declaracao  ir ao estado 9
+    tipo        ir ao estado 10
+    atribuicao  ir ao estado 11
+    bloco       ir ao estado 12
 
 
 Estado 6
 
-   15 bloco: ABRE_CHAVES • comandos FECHA_CHAVES
+    0 $accept: programa • $end
 
-    TIPO_INT       deslocar, e ir ao estado 1
-    TIPO_BOOL      deslocar, e ir ao estado 2
-    PRINT          deslocar, e ir ao estado 3
-    READ           deslocar, e ir ao estado 4
-    IDENTIFICADOR  deslocar, e ir ao estado 5
-    ABRE_CHAVES    deslocar, e ir ao estado 6
-
-    $padrão  reduzir usando a regra 3 (comandos)
-
-    comandos    ir ao estado 19
-    comando     ir ao estado 9
-    declaracao  ir ao estado 10
-    tipo        ir ao estado 11
-    atribuicao  ir ao estado 12
-    bloco       ir ao estado 13
-    print       ir ao estado 14
-    read        ir ao estado 15
+    $end  deslocar, e ir ao estado 16
 
 
 Estado 7
-
-    0 $accept: programa • $end
-
-    $end  deslocar, e ir ao estado 20
-
-
-Estado 8
 
     1 programa: comandos •
 
     $padrão  reduzir usando a regra 1 (programa)
 
 
-Estado 9
+Estado 8
 
     2 comandos: comando • comandos
 
-    TIPO_INT       deslocar, e ir ao estado 1
-    TIPO_BOOL      deslocar, e ir ao estado 2
-    PRINT          deslocar, e ir ao estado 3
-    READ           deslocar, e ir ao estado 4
-    IDENTIFICADOR  deslocar, e ir ao estado 5
-    ABRE_CHAVES    deslocar, e ir ao estado 6
+    error          deslocar, e ir ao estado 1
+    TIPO_INT       deslocar, e ir ao estado 2
+    TIPO_BOOL      deslocar, e ir ao estado 3
+    IDENTIFICADOR  deslocar, e ir ao estado 4
+    ABRE_CHAVES    deslocar, e ir ao estado 5
 
-    $padrão  reduzir usando a regra 3 (comandos)
+    $end          reduzir usando a regra 3 (comandos)
+    FECHA_CHAVES  reduzir usando a regra 3 (comandos)
 
-    comandos    ir ao estado 21
-    comando     ir ao estado 9
-    declaracao  ir ao estado 10
-    tipo        ir ao estado 11
-    atribuicao  ir ao estado 12
-    bloco       ir ao estado 13
-    print       ir ao estado 14
-    read        ir ao estado 15
+    comandos    ir ao estado 17
+    comando     ir ao estado 8
+    declaracao  ir ao estado 9
+    tipo        ir ao estado 10
+    atribuicao  ir ao estado 11
+    bloco       ir ao estado 12
+
+
+Estado 9
+
+    4 comando: declaracao • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 18
 
 
 Estado 10
 
-    4 comando: declaracao •
+    8 declaracao: tipo • declaracoes
 
-    $padrão  reduzir usando a regra 4 (comando)
+    IDENTIFICADOR  deslocar, e ir ao estado 19
+
+    declaracoes  ir ao estado 20
+    atribuicao   ir ao estado 21
 
 
 Estado 11
 
-    9 declaracao: tipo • IDENTIFICADOR maisDecl PONTO_E_VIRGULA
+    5 comando: atribuicao • PONTO_E_VIRGULA
 
-    IDENTIFICADOR  deslocar, e ir ao estado 22
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 22
 
 
 Estado 12
-
-    5 comando: atribuicao •
-
-    $padrão  reduzir usando a regra 5 (comando)
-
-
-Estado 13
 
     6 comando: bloco •
 
     $padrão  reduzir usando a regra 6 (comando)
 
 
-Estado 14
+Estado 13
 
-    7 comando: print •
+    7 comando: error PONTO_E_VIRGULA •
 
     $padrão  reduzir usando a regra 7 (comando)
 
 
+Estado 14
+
+   16 atribuicao: IDENTIFICADOR OP_ATRIBUICAO • expr
+
+    IDENTIFICADOR         deslocar, e ir ao estado 23
+    NUM_INTEIRO           deslocar, e ir ao estado 24
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 25
+
+    expr  ir ao estado 26
+
+
 Estado 15
 
-    8 comando: read •
+   20 bloco: ABRE_CHAVES comandos • FECHA_CHAVES
 
-    $padrão  reduzir usando a regra 8 (comando)
+    FECHA_CHAVES  deslocar, e ir ao estado 27
 
 
 Estado 16
-
-   16 print: PRINT ABRE_PARENTESES • IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
-
-    IDENTIFICADOR  deslocar, e ir ao estado 23
-
-
-Estado 17
-
-   17 read: READ ABRE_PARENTESES • IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
-
-    IDENTIFICADOR  deslocar, e ir ao estado 24
-
-
-Estado 18
-
-   14 atribuicao: IDENTIFICADOR OP_ATRIBUICAO • IDENTIFICADOR PONTO_E_VIRGULA
-
-    IDENTIFICADOR  deslocar, e ir ao estado 25
-
-
-Estado 19
-
-   15 bloco: ABRE_CHAVES comandos • FECHA_CHAVES
-
-    FECHA_CHAVES  deslocar, e ir ao estado 26
-
-
-Estado 20
 
     0 $accept: programa $end •
 
     $padrão  aceitar
 
 
-Estado 21
+Estado 17
 
     2 comandos: comando comandos •
 
     $padrão  reduzir usando a regra 2 (comandos)
 
 
-Estado 22
+Estado 18
 
-    9 declaracao: tipo IDENTIFICADOR • maisDecl PONTO_E_VIRGULA
+    4 comando: declaracao PONTO_E_VIRGULA •
 
-    VIRGULA  deslocar, e ir ao estado 27
-
-    $padrão  reduzir usando a regra 11 (maisDecl)
-
-    maisDecl  ir ao estado 28
+    $padrão  reduzir usando a regra 4 (comando)
 
 
-Estado 23
+Estado 19
 
-   16 print: PRINT ABRE_PARENTESES IDENTIFICADOR • maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
+   10 declaracoes: IDENTIFICADOR • maisDecl
+   16 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
 
-    VIRGULA  deslocar, e ir ao estado 27
+    OP_ATRIBUICAO  deslocar, e ir ao estado 14
+    VIRGULA        deslocar, e ir ao estado 28
 
-    $padrão  reduzir usando a regra 11 (maisDecl)
+    $padrão  reduzir usando a regra 13 (maisDecl)
 
     maisDecl  ir ao estado 29
 
 
-Estado 24
+Estado 20
 
-   17 read: READ ABRE_PARENTESES IDENTIFICADOR • maisDecl FECHA_PARENTESES PONTO_E_VIRGULA
+    8 declaracao: tipo declaracoes •
 
-    VIRGULA  deslocar, e ir ao estado 27
+    $padrão  reduzir usando a regra 8 (declaracao)
 
-    $padrão  reduzir usando a regra 11 (maisDecl)
+
+Estado 21
+
+    9 declaracoes: atribuicao • maisDecl
+
+    VIRGULA  deslocar, e ir ao estado 28
+
+    $padrão  reduzir usando a regra 13 (maisDecl)
 
     maisDecl  ir ao estado 30
 
 
+Estado 22
+
+    5 comando: atribuicao PONTO_E_VIRGULA •
+
+    $padrão  reduzir usando a regra 5 (comando)
+
+
+Estado 23
+
+   17 expr: IDENTIFICADOR •
+
+    $padrão  reduzir usando a regra 17 (expr)
+
+
+Estado 24
+
+   18 expr: NUM_INTEIRO •
+
+    $padrão  reduzir usando a regra 18 (expr)
+
+
 Estado 25
 
-   14 atribuicao: IDENTIFICADOR OP_ATRIBUICAO IDENTIFICADOR • PONTO_E_VIRGULA
+   19 expr: NUM_INTEIRO_NEGATIVO •
 
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 31
+    $padrão  reduzir usando a regra 19 (expr)
 
 
 Estado 26
 
-   15 bloco: ABRE_CHAVES comandos FECHA_CHAVES •
+   16 atribuicao: IDENTIFICADOR OP_ATRIBUICAO expr •
 
-    $padrão  reduzir usando a regra 15 (bloco)
+    $padrão  reduzir usando a regra 16 (atribuicao)
 
 
 Estado 27
 
-   10 maisDecl: VIRGULA • IDENTIFICADOR maisDecl
+   20 bloco: ABRE_CHAVES comandos FECHA_CHAVES •
 
-    IDENTIFICADOR  deslocar, e ir ao estado 32
+    $padrão  reduzir usando a regra 20 (bloco)
 
 
 Estado 28
 
-    9 declaracao: tipo IDENTIFICADOR maisDecl • PONTO_E_VIRGULA
+   11 maisDecl: VIRGULA • atribuicao maisDecl
+   12         | VIRGULA • IDENTIFICADOR maisDecl
 
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 33
+    IDENTIFICADOR  deslocar, e ir ao estado 31
+
+    atribuicao  ir ao estado 32
 
 
 Estado 29
 
-   16 print: PRINT ABRE_PARENTESES IDENTIFICADOR maisDecl • FECHA_PARENTESES PONTO_E_VIRGULA
+   10 declaracoes: IDENTIFICADOR maisDecl •
 
-    FECHA_PARENTESES  deslocar, e ir ao estado 34
+    $padrão  reduzir usando a regra 10 (declaracoes)
 
 
 Estado 30
 
-   17 read: READ ABRE_PARENTESES IDENTIFICADOR maisDecl • FECHA_PARENTESES PONTO_E_VIRGULA
+    9 declaracoes: atribuicao maisDecl •
 
-    FECHA_PARENTESES  deslocar, e ir ao estado 35
+    $padrão  reduzir usando a regra 9 (declaracoes)
 
 
 Estado 31
 
-   14 atribuicao: IDENTIFICADOR OP_ATRIBUICAO IDENTIFICADOR PONTO_E_VIRGULA •
+   12 maisDecl: VIRGULA IDENTIFICADOR • maisDecl
+   16 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
 
-    $padrão  reduzir usando a regra 14 (atribuicao)
+    OP_ATRIBUICAO  deslocar, e ir ao estado 14
+    VIRGULA        deslocar, e ir ao estado 28
+
+    $padrão  reduzir usando a regra 13 (maisDecl)
+
+    maisDecl  ir ao estado 33
 
 
 Estado 32
 
-   10 maisDecl: VIRGULA IDENTIFICADOR • maisDecl
+   11 maisDecl: VIRGULA atribuicao • maisDecl
 
-    VIRGULA  deslocar, e ir ao estado 27
+    VIRGULA  deslocar, e ir ao estado 28
 
-    $padrão  reduzir usando a regra 11 (maisDecl)
+    $padrão  reduzir usando a regra 13 (maisDecl)
 
-    maisDecl  ir ao estado 36
+    maisDecl  ir ao estado 34
 
 
 Estado 33
 
-    9 declaracao: tipo IDENTIFICADOR maisDecl PONTO_E_VIRGULA •
+   12 maisDecl: VIRGULA IDENTIFICADOR maisDecl •
 
-    $padrão  reduzir usando a regra 9 (declaracao)
+    $padrão  reduzir usando a regra 12 (maisDecl)
 
 
 Estado 34
 
-   16 print: PRINT ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES • PONTO_E_VIRGULA
+   11 maisDecl: VIRGULA atribuicao maisDecl •
 
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 37
-
-
-Estado 35
-
-   17 read: READ ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES • PONTO_E_VIRGULA
-
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 38
-
-
-Estado 36
-
-   10 maisDecl: VIRGULA IDENTIFICADOR maisDecl •
-
-    $padrão  reduzir usando a regra 10 (maisDecl)
-
-
-Estado 37
-
-   16 print: PRINT ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA •
-
-    $padrão  reduzir usando a regra 16 (print)
-
-
-Estado 38
-
-   17 read: READ ABRE_PARENTESES IDENTIFICADOR maisDecl FECHA_PARENTESES PONTO_E_VIRGULA •
-
-    $padrão  reduzir usando a regra 17 (read)
+    $padrão  reduzir usando a regra 11 (maisDecl)

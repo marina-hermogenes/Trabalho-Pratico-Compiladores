@@ -70,6 +70,11 @@ other       .
 //Regras de reconhecimento de palavras reservadas, id, números, pontuação e operadores
 %}
 
+"-"0                    {
+                            reportarErro("-0", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros); coluna += yyleng; erros++;
+                            printf("    -0 não é aceitável. \n");
+                        }
+
 "int"                   { setUltimo("TIPO_INT", yytext); printf("Linha: %d, Coluna: %d -> %s (TIPO_INT)\n", linha, coluna, yytext); coluna += yyleng; return TIPO_INT;}
 "bool"                  { setUltimo("TIPO_BOOL", yytext); printf("Linha: %d, Coluna: %d -> %s (TIPO_BOOL)\n", linha, coluna, yytext); coluna += yyleng; return TIPO_BOOL;}
 
