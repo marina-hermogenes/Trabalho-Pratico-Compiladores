@@ -1,9 +1,11 @@
 %{
     #include <stdio.h>
     #include <stdlib.h>
+    #include <string.h> 
 
     extern int linha;
     extern int coluna;
+    extern char *yytext;
 
     int yylex(void);
     void yyerror(const char *s);
@@ -15,6 +17,11 @@
 %token ABRE_PARENTESES FECHA_PARENTESES ABRE_CHAVES FECHA_CHAVES
 %token PONTO_E_VIRGULA VIRGULA
 
+
+/* Precedencia para resolver o "dangling else". Perguntar ao professor sobre possivel mudança depois. */
+%nonassoc IF_SEM_ELSE 
+%nonassoc ELSE  
+
 %%
 programa
     : comandos { printf("Sucesso!\n"); }
@@ -25,18 +32,17 @@ comandos
     |
     ;
 
-///////////////// ALTERAR AQUI /////////////////////
-
 comando
     : declaracao PONTO_E_VIRGULA
     | atribuicao PONTO_E_VIRGULA
     | bloco
  //   | print PONTO_E_VIRGULA
  //   | read PONTO_E_VIRGULA
-    | error PONTO_E_VIRGULA {fprintf(stderr, "→ Comando inválido na linha %d.\n", linha); yyerrok;}
+    | if_stmt
+    | while_stmt
+    | error PONTO_E_VIRGULA {fprintf(stderr, "Comando inválido na linha %d. Sincronizando com ';'.\n", linha); yyerrok;}
     ;
 
-////////////////////////////////////////////////////
 
 declaracao
     : tipo declaracoes
@@ -78,13 +84,43 @@ expr
 bloco
     : ABRE_CHAVES comandos FECHA_CHAVES
     ;
+
+
+while_stmt
+    : WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando
+
+    | WHILE error PONTO_E_VIRGULA {
+        int coluna_erro = coluna - strlen(yytext); 
+        if (coluna_erro < 1) coluna_erro = 1;
+        fprintf(stderr, "Erro na formatação do WHILE na linha %d, coluna %d. Sincronizando com ';'.\n", linha, coluna_erro);
+        yyerrok;
+      }
+    ;
+
+if_stmt
+    : IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando
+    | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE
+    
+    | IF error PONTO_E_VIRGULA {
+        int coluna_erro = coluna - strlen(yytext); 
+        if (coluna_erro < 1) coluna_erro = 1;
+        fprintf(stderr, "Erro na formatação do IF na linha %d, coluna %d. Sincronizando com ';'.\n", linha, coluna_erro);
+        yyerrok;
+      }
+    ;
+
 %%
+
 
 void yyerror(const char *s) {
     extern int linha;
     extern int coluna;
-    extern char *yytext; // vem do Flex
-    fprintf(stderr, "Erro sintático na linha %d, coluna %d, iniciando com '%s': %s\n", linha, coluna-1, yytext, s);
+    extern char *yytext;
+    
+    int coluna_erro = coluna - strlen(yytext); 
+    if (coluna_erro < 1) coluna_erro = 1;
+
+    fprintf(stderr, "Erro sintático na linha %d, coluna %d, próximo a '%s': %s\n", linha, coluna_erro, yytext, s);
 }
 
 int main(void) {
