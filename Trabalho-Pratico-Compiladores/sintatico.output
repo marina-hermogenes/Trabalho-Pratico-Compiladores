@@ -1,7 +1,5 @@
 Terminais sem uso na gramática
 
-    PRINT
-    READ
     TRUE
     FALSE
     OP_RELACIONAL
@@ -16,626 +14,857 @@ Gramática
 
     1 programa: comandos
 
-    2 comandos: comando comandos
+    2 comandos: comandos comando
     3         | ε
 
     4 comando: declaracao PONTO_E_VIRGULA
     5        | atribuicao PONTO_E_VIRGULA
     6        | bloco
-    7        | if_stmt
-    8        | while_stmt
-    9        | error PONTO_E_VIRGULA
+    7        | print PONTO_E_VIRGULA
+    8        | read PONTO_E_VIRGULA
+    9        | if_stmt
+   10        | while_stmt
+   11        | error PONTO_E_VIRGULA
 
-   10 declaracao: tipo declaracoes
+   12 declaracao: tipo declaracoes
 
-   11 declaracoes: atribuicao maisDecl
-   12            | IDENTIFICADOR maisDecl
+   13 declaracoes: atribuicao maisDecl
+   14            | IDENTIFICADOR maisDecl
 
-   13 maisDecl: VIRGULA atribuicao maisDecl
-   14         | VIRGULA IDENTIFICADOR maisDecl
-   15         | ε
+   15 maisDecl: VIRGULA atribuicao maisDecl
+   16         | VIRGULA IDENTIFICADOR maisDecl
+   17         | ε
 
-   16 tipo: TIPO_INT
-   17     | TIPO_BOOL
+   18 tipo: TIPO_INT
+   19     | TIPO_BOOL
 
-   18 atribuicao: IDENTIFICADOR OP_ATRIBUICAO expr
+   20 atribuicao: IDENTIFICADOR OP_ATRIBUICAO expr
 
-   19 expr: IDENTIFICADOR
-   20     | NUM_INTEIRO
-   21     | NUM_INTEIRO_NEGATIVO
+   21 expr: IDENTIFICADOR
+   22     | NUM_INTEIRO
+   23     | NUM_INTEIRO_NEGATIVO
 
-   22 bloco: ABRE_CHAVES comandos FECHA_CHAVES
+   24 bloco: ABRE_CHAVES comandos FECHA_CHAVES
 
-   23 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando
-   24           | WHILE error PONTO_E_VIRGULA
+   25 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando
+   26           | WHILE error PONTO_E_VIRGULA
 
-   25 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando
-   26        | IF ABRE_PARENTESES expr FECHA_PARENTESES comando
-   27        | IF error PONTO_E_VIRGULA
+   27 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando
+   28        | IF ABRE_PARENTESES expr FECHA_PARENTESES comando
+   29        | IF error PONTO_E_VIRGULA
+
+   30 read: READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES
+   31     | READ ABRE_PARENTESES error FECHA_PARENTESES
+
+   32 print: PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
+   33      | PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
+   34      | PRINT ABRE_PARENTESES error FECHA_PARENTESES
+
+   35 maisExpr: VIRGULA expr maisExpr
+   36         | VIRGULA LITERAL maisExpr
+   37         | ε
 
 
 Terminais, com as regras onde eles aparecem
 
     $end (0) 0
-    error (256) 9 24 27
-    TIPO_INT (258) 16
-    TIPO_BOOL (259) 17
-    IF (260) 25 26 27
-    ELSE (261) 25
-    WHILE (262) 23 24
-    PRINT (263)
-    READ (264)
+    error (256) 11 26 29 31 34
+    TIPO_INT (258) 18
+    TIPO_BOOL (259) 19
+    IF (260) 27 28 29
+    ELSE (261) 27
+    WHILE (262) 25 26
+    PRINT (263) 32 33 34
+    READ (264) 30 31
     TRUE (265)
     FALSE (266)
-    IDENTIFICADOR (267) 12 14 18 19
-    NUM_INTEIRO (268) 20
-    NUM_INTEIRO_NEGATIVO (269) 21
-    OP_ATRIBUICAO (270) 18
+    IDENTIFICADOR (267) 14 16 20 21 30
+    NUM_INTEIRO (268) 22
+    NUM_INTEIRO_NEGATIVO (269) 23
+    OP_ATRIBUICAO (270) 20
     OP_RELACIONAL (271)
     OP_ARITMETICO (272)
     OP_LOGICO (273)
     NOT (274)
-    ABRE_PARENTESES (275) 23 25 26
-    FECHA_PARENTESES (276) 23 25 26
-    ABRE_CHAVES (277) 22
-    FECHA_CHAVES (278) 22
-    PONTO_E_VIRGULA (279) 4 5 9 24 27
-    VIRGULA (280) 13 14
-    IF_SEM_ELSE (281)
+    ABRE_PARENTESES (275) 25 27 28 30 31 32 33 34
+    FECHA_PARENTESES (276) 25 27 28 30 31 32 33 34
+    ABRE_CHAVES (277) 24
+    FECHA_CHAVES (278) 24
+    PONTO_E_VIRGULA (279) 4 5 7 8 11 26 29
+    VIRGULA (280) 15 16 35 36
+    LITERAL (281) 33 36
+    IF_SEM_ELSE (282)
 
 
 Não terminais com as regras onde eles aparecem
 
-    $accept (27)
+    $accept (28)
         à esquerda: 0
-    programa (28)
+    programa (29)
         à esquerda: 1
         à direita: 0
-    comandos (29)
+    comandos (30)
         à esquerda: 2 3
-        à direita: 1 2 22
-    comando (30)
-        à esquerda: 4 5 6 7 8 9
-        à direita: 2 23 25 26
-    declaracao (31)
-        à esquerda: 10
+        à direita: 1 2 24
+    comando (31)
+        à esquerda: 4 5 6 7 8 9 10 11
+        à direita: 2 25 27 28
+    declaracao (32)
+        à esquerda: 12
         à direita: 4
-    declaracoes (32)
-        à esquerda: 11 12
-        à direita: 10
-    maisDecl (33)
-        à esquerda: 13 14 15
-        à direita: 11 12 13 14
-    tipo (34)
-        à esquerda: 16 17
-        à direita: 10
-    atribuicao (35)
-        à esquerda: 18
-        à direita: 5 11 13
-    expr (36)
-        à esquerda: 19 20 21
-        à direita: 18 23 25 26
-    bloco (37)
-        à esquerda: 22
+    declaracoes (33)
+        à esquerda: 13 14
+        à direita: 12
+    maisDecl (34)
+        à esquerda: 15 16 17
+        à direita: 13 14 15 16
+    tipo (35)
+        à esquerda: 18 19
+        à direita: 12
+    atribuicao (36)
+        à esquerda: 20
+        à direita: 5 13 15
+    expr (37)
+        à esquerda: 21 22 23
+        à direita: 20 25 27 28 32 35
+    bloco (38)
+        à esquerda: 24
         à direita: 6
-    while_stmt (38)
-        à esquerda: 23 24
+    while_stmt (39)
+        à esquerda: 25 26
+        à direita: 10
+    if_stmt (40)
+        à esquerda: 27 28 29
+        à direita: 9
+    read (41)
+        à esquerda: 30 31
         à direita: 8
-    if_stmt (39)
-        à esquerda: 25 26 27
+    print (42)
+        à esquerda: 32 33 34
         à direita: 7
+    maisExpr (43)
+        à esquerda: 35 36 37
+        à direita: 32 33 35 36
 
 
 Estado 0
 
     0 $accept: • programa $end
 
-    error          deslocar, e ir ao estado 1
-    TIPO_INT       deslocar, e ir ao estado 2
-    TIPO_BOOL      deslocar, e ir ao estado 3
-    IF             deslocar, e ir ao estado 4
-    WHILE          deslocar, e ir ao estado 5
-    IDENTIFICADOR  deslocar, e ir ao estado 6
-    ABRE_CHAVES    deslocar, e ir ao estado 7
+    $padrão  reduzir usando a regra 3 (comandos)
 
-    $end  reduzir usando a regra 3 (comandos)
-
-    programa    ir ao estado 8
-    comandos    ir ao estado 9
-    comando     ir ao estado 10
-    declaracao  ir ao estado 11
-    tipo        ir ao estado 12
-    atribuicao  ir ao estado 13
-    bloco       ir ao estado 14
-    while_stmt  ir ao estado 15
-    if_stmt     ir ao estado 16
+    programa  ir ao estado 1
+    comandos  ir ao estado 2
 
 
 Estado 1
 
-    9 comando: error • PONTO_E_VIRGULA
+    0 $accept: programa • $end
 
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 17
+    $end  deslocar, e ir ao estado 3
 
 
 Estado 2
 
-   16 tipo: TIPO_INT •
+    1 programa: comandos •
+    2 comandos: comandos • comando
 
-    $padrão  reduzir usando a regra 16 (tipo)
+    error          deslocar, e ir ao estado 4
+    TIPO_INT       deslocar, e ir ao estado 5
+    TIPO_BOOL      deslocar, e ir ao estado 6
+    IF             deslocar, e ir ao estado 7
+    WHILE          deslocar, e ir ao estado 8
+    PRINT          deslocar, e ir ao estado 9
+    READ           deslocar, e ir ao estado 10
+    IDENTIFICADOR  deslocar, e ir ao estado 11
+    ABRE_CHAVES    deslocar, e ir ao estado 12
+
+    $end  reduzir usando a regra 1 (programa)
+
+    comando     ir ao estado 13
+    declaracao  ir ao estado 14
+    tipo        ir ao estado 15
+    atribuicao  ir ao estado 16
+    bloco       ir ao estado 17
+    while_stmt  ir ao estado 18
+    if_stmt     ir ao estado 19
+    read        ir ao estado 20
+    print       ir ao estado 21
 
 
 Estado 3
-
-   17 tipo: TIPO_BOOL •
-
-    $padrão  reduzir usando a regra 17 (tipo)
-
-
-Estado 4
-
-   25 if_stmt: IF • ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando
-   26        | IF • ABRE_PARENTESES expr FECHA_PARENTESES comando
-   27        | IF • error PONTO_E_VIRGULA
-
-    error            deslocar, e ir ao estado 18
-    ABRE_PARENTESES  deslocar, e ir ao estado 19
-
-
-Estado 5
-
-   23 while_stmt: WHILE • ABRE_PARENTESES expr FECHA_PARENTESES comando
-   24           | WHILE • error PONTO_E_VIRGULA
-
-    error            deslocar, e ir ao estado 20
-    ABRE_PARENTESES  deslocar, e ir ao estado 21
-
-
-Estado 6
-
-   18 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
-
-    OP_ATRIBUICAO  deslocar, e ir ao estado 22
-
-
-Estado 7
-
-   22 bloco: ABRE_CHAVES • comandos FECHA_CHAVES
-
-    error          deslocar, e ir ao estado 1
-    TIPO_INT       deslocar, e ir ao estado 2
-    TIPO_BOOL      deslocar, e ir ao estado 3
-    IF             deslocar, e ir ao estado 4
-    WHILE          deslocar, e ir ao estado 5
-    IDENTIFICADOR  deslocar, e ir ao estado 6
-    ABRE_CHAVES    deslocar, e ir ao estado 7
-
-    FECHA_CHAVES  reduzir usando a regra 3 (comandos)
-
-    comandos    ir ao estado 23
-    comando     ir ao estado 10
-    declaracao  ir ao estado 11
-    tipo        ir ao estado 12
-    atribuicao  ir ao estado 13
-    bloco       ir ao estado 14
-    while_stmt  ir ao estado 15
-    if_stmt     ir ao estado 16
-
-
-Estado 8
-
-    0 $accept: programa • $end
-
-    $end  deslocar, e ir ao estado 24
-
-
-Estado 9
-
-    1 programa: comandos •
-
-    $padrão  reduzir usando a regra 1 (programa)
-
-
-Estado 10
-
-    2 comandos: comando • comandos
-
-    error          deslocar, e ir ao estado 1
-    TIPO_INT       deslocar, e ir ao estado 2
-    TIPO_BOOL      deslocar, e ir ao estado 3
-    IF             deslocar, e ir ao estado 4
-    WHILE          deslocar, e ir ao estado 5
-    IDENTIFICADOR  deslocar, e ir ao estado 6
-    ABRE_CHAVES    deslocar, e ir ao estado 7
-
-    $end          reduzir usando a regra 3 (comandos)
-    FECHA_CHAVES  reduzir usando a regra 3 (comandos)
-
-    comandos    ir ao estado 25
-    comando     ir ao estado 10
-    declaracao  ir ao estado 11
-    tipo        ir ao estado 12
-    atribuicao  ir ao estado 13
-    bloco       ir ao estado 14
-    while_stmt  ir ao estado 15
-    if_stmt     ir ao estado 16
-
-
-Estado 11
-
-    4 comando: declaracao • PONTO_E_VIRGULA
-
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 26
-
-
-Estado 12
-
-   10 declaracao: tipo • declaracoes
-
-    IDENTIFICADOR  deslocar, e ir ao estado 27
-
-    declaracoes  ir ao estado 28
-    atribuicao   ir ao estado 29
-
-
-Estado 13
-
-    5 comando: atribuicao • PONTO_E_VIRGULA
-
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 30
-
-
-Estado 14
-
-    6 comando: bloco •
-
-    $padrão  reduzir usando a regra 6 (comando)
-
-
-Estado 15
-
-    8 comando: while_stmt •
-
-    $padrão  reduzir usando a regra 8 (comando)
-
-
-Estado 16
-
-    7 comando: if_stmt •
-
-    $padrão  reduzir usando a regra 7 (comando)
-
-
-Estado 17
-
-    9 comando: error PONTO_E_VIRGULA •
-
-    $padrão  reduzir usando a regra 9 (comando)
-
-
-Estado 18
-
-   27 if_stmt: IF error • PONTO_E_VIRGULA
-
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 31
-
-
-Estado 19
-
-   25 if_stmt: IF ABRE_PARENTESES • expr FECHA_PARENTESES comando ELSE comando
-   26        | IF ABRE_PARENTESES • expr FECHA_PARENTESES comando
-
-    IDENTIFICADOR         deslocar, e ir ao estado 32
-    NUM_INTEIRO           deslocar, e ir ao estado 33
-    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 34
-
-    expr  ir ao estado 35
-
-
-Estado 20
-
-   24 while_stmt: WHILE error • PONTO_E_VIRGULA
-
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 36
-
-
-Estado 21
-
-   23 while_stmt: WHILE ABRE_PARENTESES • expr FECHA_PARENTESES comando
-
-    IDENTIFICADOR         deslocar, e ir ao estado 32
-    NUM_INTEIRO           deslocar, e ir ao estado 33
-    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 34
-
-    expr  ir ao estado 37
-
-
-Estado 22
-
-   18 atribuicao: IDENTIFICADOR OP_ATRIBUICAO • expr
-
-    IDENTIFICADOR         deslocar, e ir ao estado 32
-    NUM_INTEIRO           deslocar, e ir ao estado 33
-    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 34
-
-    expr  ir ao estado 38
-
-
-Estado 23
-
-   22 bloco: ABRE_CHAVES comandos • FECHA_CHAVES
-
-    FECHA_CHAVES  deslocar, e ir ao estado 39
-
-
-Estado 24
 
     0 $accept: programa $end •
 
     $padrão  aceitar
 
 
-Estado 25
+Estado 4
 
-    2 comandos: comando comandos •
+   11 comando: error • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 22
+
+
+Estado 5
+
+   18 tipo: TIPO_INT •
+
+    $padrão  reduzir usando a regra 18 (tipo)
+
+
+Estado 6
+
+   19 tipo: TIPO_BOOL •
+
+    $padrão  reduzir usando a regra 19 (tipo)
+
+
+Estado 7
+
+   27 if_stmt: IF • ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando
+   28        | IF • ABRE_PARENTESES expr FECHA_PARENTESES comando
+   29        | IF • error PONTO_E_VIRGULA
+
+    error            deslocar, e ir ao estado 23
+    ABRE_PARENTESES  deslocar, e ir ao estado 24
+
+
+Estado 8
+
+   25 while_stmt: WHILE • ABRE_PARENTESES expr FECHA_PARENTESES comando
+   26           | WHILE • error PONTO_E_VIRGULA
+
+    error            deslocar, e ir ao estado 25
+    ABRE_PARENTESES  deslocar, e ir ao estado 26
+
+
+Estado 9
+
+   32 print: PRINT • ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
+   33      | PRINT • ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
+   34      | PRINT • ABRE_PARENTESES error FECHA_PARENTESES
+
+    ABRE_PARENTESES  deslocar, e ir ao estado 27
+
+
+Estado 10
+
+   30 read: READ • ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES
+   31     | READ • ABRE_PARENTESES error FECHA_PARENTESES
+
+    ABRE_PARENTESES  deslocar, e ir ao estado 28
+
+
+Estado 11
+
+   20 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
+
+    OP_ATRIBUICAO  deslocar, e ir ao estado 29
+
+
+Estado 12
+
+   24 bloco: ABRE_CHAVES • comandos FECHA_CHAVES
+
+    $padrão  reduzir usando a regra 3 (comandos)
+
+    comandos  ir ao estado 30
+
+
+Estado 13
+
+    2 comandos: comandos comando •
 
     $padrão  reduzir usando a regra 2 (comandos)
 
 
+Estado 14
+
+    4 comando: declaracao • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 31
+
+
+Estado 15
+
+   12 declaracao: tipo • declaracoes
+
+    IDENTIFICADOR  deslocar, e ir ao estado 32
+
+    declaracoes  ir ao estado 33
+    atribuicao   ir ao estado 34
+
+
+Estado 16
+
+    5 comando: atribuicao • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 35
+
+
+Estado 17
+
+    6 comando: bloco •
+
+    $padrão  reduzir usando a regra 6 (comando)
+
+
+Estado 18
+
+   10 comando: while_stmt •
+
+    $padrão  reduzir usando a regra 10 (comando)
+
+
+Estado 19
+
+    9 comando: if_stmt •
+
+    $padrão  reduzir usando a regra 9 (comando)
+
+
+Estado 20
+
+    8 comando: read • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 36
+
+
+Estado 21
+
+    7 comando: print • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 37
+
+
+Estado 22
+
+   11 comando: error PONTO_E_VIRGULA •
+
+    $padrão  reduzir usando a regra 11 (comando)
+
+
+Estado 23
+
+   29 if_stmt: IF error • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 38
+
+
+Estado 24
+
+   27 if_stmt: IF ABRE_PARENTESES • expr FECHA_PARENTESES comando ELSE comando
+   28        | IF ABRE_PARENTESES • expr FECHA_PARENTESES comando
+
+    IDENTIFICADOR         deslocar, e ir ao estado 39
+    NUM_INTEIRO           deslocar, e ir ao estado 40
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 41
+
+    expr  ir ao estado 42
+
+
+Estado 25
+
+   26 while_stmt: WHILE error • PONTO_E_VIRGULA
+
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 43
+
+
 Estado 26
+
+   25 while_stmt: WHILE ABRE_PARENTESES • expr FECHA_PARENTESES comando
+
+    IDENTIFICADOR         deslocar, e ir ao estado 39
+    NUM_INTEIRO           deslocar, e ir ao estado 40
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 41
+
+    expr  ir ao estado 44
+
+
+Estado 27
+
+   32 print: PRINT ABRE_PARENTESES • expr maisExpr FECHA_PARENTESES
+   33      | PRINT ABRE_PARENTESES • LITERAL maisExpr FECHA_PARENTESES
+   34      | PRINT ABRE_PARENTESES • error FECHA_PARENTESES
+
+    error                 deslocar, e ir ao estado 45
+    IDENTIFICADOR         deslocar, e ir ao estado 39
+    NUM_INTEIRO           deslocar, e ir ao estado 40
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 41
+    LITERAL               deslocar, e ir ao estado 46
+
+    expr  ir ao estado 47
+
+
+Estado 28
+
+   30 read: READ ABRE_PARENTESES • IDENTIFICADOR FECHA_PARENTESES
+   31     | READ ABRE_PARENTESES • error FECHA_PARENTESES
+
+    error          deslocar, e ir ao estado 48
+    IDENTIFICADOR  deslocar, e ir ao estado 49
+
+
+Estado 29
+
+   20 atribuicao: IDENTIFICADOR OP_ATRIBUICAO • expr
+
+    IDENTIFICADOR         deslocar, e ir ao estado 39
+    NUM_INTEIRO           deslocar, e ir ao estado 40
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 41
+
+    expr  ir ao estado 50
+
+
+Estado 30
+
+    2 comandos: comandos • comando
+   24 bloco: ABRE_CHAVES comandos • FECHA_CHAVES
+
+    error          deslocar, e ir ao estado 4
+    TIPO_INT       deslocar, e ir ao estado 5
+    TIPO_BOOL      deslocar, e ir ao estado 6
+    IF             deslocar, e ir ao estado 7
+    WHILE          deslocar, e ir ao estado 8
+    PRINT          deslocar, e ir ao estado 9
+    READ           deslocar, e ir ao estado 10
+    IDENTIFICADOR  deslocar, e ir ao estado 11
+    ABRE_CHAVES    deslocar, e ir ao estado 12
+    FECHA_CHAVES   deslocar, e ir ao estado 51
+
+    comando     ir ao estado 13
+    declaracao  ir ao estado 14
+    tipo        ir ao estado 15
+    atribuicao  ir ao estado 16
+    bloco       ir ao estado 17
+    while_stmt  ir ao estado 18
+    if_stmt     ir ao estado 19
+    read        ir ao estado 20
+    print       ir ao estado 21
+
+
+Estado 31
 
     4 comando: declaracao PONTO_E_VIRGULA •
 
     $padrão  reduzir usando a regra 4 (comando)
 
 
-Estado 27
+Estado 32
 
-   12 declaracoes: IDENTIFICADOR • maisDecl
-   18 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
+   14 declaracoes: IDENTIFICADOR • maisDecl
+   20 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
 
-    OP_ATRIBUICAO  deslocar, e ir ao estado 22
-    VIRGULA        deslocar, e ir ao estado 40
+    OP_ATRIBUICAO  deslocar, e ir ao estado 29
+    VIRGULA        deslocar, e ir ao estado 52
 
-    $padrão  reduzir usando a regra 15 (maisDecl)
+    $padrão  reduzir usando a regra 17 (maisDecl)
 
-    maisDecl  ir ao estado 41
-
-
-Estado 28
-
-   10 declaracao: tipo declaracoes •
-
-    $padrão  reduzir usando a regra 10 (declaracao)
+    maisDecl  ir ao estado 53
 
 
-Estado 29
+Estado 33
 
-   11 declaracoes: atribuicao • maisDecl
+   12 declaracao: tipo declaracoes •
 
-    VIRGULA  deslocar, e ir ao estado 40
-
-    $padrão  reduzir usando a regra 15 (maisDecl)
-
-    maisDecl  ir ao estado 42
+    $padrão  reduzir usando a regra 12 (declaracao)
 
 
-Estado 30
+Estado 34
+
+   13 declaracoes: atribuicao • maisDecl
+
+    VIRGULA  deslocar, e ir ao estado 52
+
+    $padrão  reduzir usando a regra 17 (maisDecl)
+
+    maisDecl  ir ao estado 54
+
+
+Estado 35
 
     5 comando: atribuicao PONTO_E_VIRGULA •
 
     $padrão  reduzir usando a regra 5 (comando)
 
 
-Estado 31
-
-   27 if_stmt: IF error PONTO_E_VIRGULA •
-
-    $padrão  reduzir usando a regra 27 (if_stmt)
-
-
-Estado 32
-
-   19 expr: IDENTIFICADOR •
-
-    $padrão  reduzir usando a regra 19 (expr)
-
-
-Estado 33
-
-   20 expr: NUM_INTEIRO •
-
-    $padrão  reduzir usando a regra 20 (expr)
-
-
-Estado 34
-
-   21 expr: NUM_INTEIRO_NEGATIVO •
-
-    $padrão  reduzir usando a regra 21 (expr)
-
-
-Estado 35
-
-   25 if_stmt: IF ABRE_PARENTESES expr • FECHA_PARENTESES comando ELSE comando
-   26        | IF ABRE_PARENTESES expr • FECHA_PARENTESES comando
-
-    FECHA_PARENTESES  deslocar, e ir ao estado 43
-
-
 Estado 36
 
-   24 while_stmt: WHILE error PONTO_E_VIRGULA •
+    8 comando: read PONTO_E_VIRGULA •
 
-    $padrão  reduzir usando a regra 24 (while_stmt)
+    $padrão  reduzir usando a regra 8 (comando)
 
 
 Estado 37
 
-   23 while_stmt: WHILE ABRE_PARENTESES expr • FECHA_PARENTESES comando
+    7 comando: print PONTO_E_VIRGULA •
 
-    FECHA_PARENTESES  deslocar, e ir ao estado 44
+    $padrão  reduzir usando a regra 7 (comando)
 
 
 Estado 38
 
-   18 atribuicao: IDENTIFICADOR OP_ATRIBUICAO expr •
+   29 if_stmt: IF error PONTO_E_VIRGULA •
 
-    $padrão  reduzir usando a regra 18 (atribuicao)
+    $padrão  reduzir usando a regra 29 (if_stmt)
 
 
 Estado 39
 
-   22 bloco: ABRE_CHAVES comandos FECHA_CHAVES •
+   21 expr: IDENTIFICADOR •
 
-    $padrão  reduzir usando a regra 22 (bloco)
+    $padrão  reduzir usando a regra 21 (expr)
 
 
 Estado 40
 
-   13 maisDecl: VIRGULA • atribuicao maisDecl
-   14         | VIRGULA • IDENTIFICADOR maisDecl
+   22 expr: NUM_INTEIRO •
 
-    IDENTIFICADOR  deslocar, e ir ao estado 45
-
-    atribuicao  ir ao estado 46
+    $padrão  reduzir usando a regra 22 (expr)
 
 
 Estado 41
 
-   12 declaracoes: IDENTIFICADOR maisDecl •
+   23 expr: NUM_INTEIRO_NEGATIVO •
 
-    $padrão  reduzir usando a regra 12 (declaracoes)
+    $padrão  reduzir usando a regra 23 (expr)
 
 
 Estado 42
 
-   11 declaracoes: atribuicao maisDecl •
+   27 if_stmt: IF ABRE_PARENTESES expr • FECHA_PARENTESES comando ELSE comando
+   28        | IF ABRE_PARENTESES expr • FECHA_PARENTESES comando
 
-    $padrão  reduzir usando a regra 11 (declaracoes)
+    FECHA_PARENTESES  deslocar, e ir ao estado 55
 
 
 Estado 43
 
-   25 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES • comando ELSE comando
-   26        | IF ABRE_PARENTESES expr FECHA_PARENTESES • comando
+   26 while_stmt: WHILE error PONTO_E_VIRGULA •
 
-    error          deslocar, e ir ao estado 1
-    TIPO_INT       deslocar, e ir ao estado 2
-    TIPO_BOOL      deslocar, e ir ao estado 3
-    IF             deslocar, e ir ao estado 4
-    WHILE          deslocar, e ir ao estado 5
-    IDENTIFICADOR  deslocar, e ir ao estado 6
-    ABRE_CHAVES    deslocar, e ir ao estado 7
-
-    comando     ir ao estado 47
-    declaracao  ir ao estado 11
-    tipo        ir ao estado 12
-    atribuicao  ir ao estado 13
-    bloco       ir ao estado 14
-    while_stmt  ir ao estado 15
-    if_stmt     ir ao estado 16
+    $padrão  reduzir usando a regra 26 (while_stmt)
 
 
 Estado 44
 
-   23 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES • comando
+   25 while_stmt: WHILE ABRE_PARENTESES expr • FECHA_PARENTESES comando
 
-    error          deslocar, e ir ao estado 1
-    TIPO_INT       deslocar, e ir ao estado 2
-    TIPO_BOOL      deslocar, e ir ao estado 3
-    IF             deslocar, e ir ao estado 4
-    WHILE          deslocar, e ir ao estado 5
-    IDENTIFICADOR  deslocar, e ir ao estado 6
-    ABRE_CHAVES    deslocar, e ir ao estado 7
-
-    comando     ir ao estado 48
-    declaracao  ir ao estado 11
-    tipo        ir ao estado 12
-    atribuicao  ir ao estado 13
-    bloco       ir ao estado 14
-    while_stmt  ir ao estado 15
-    if_stmt     ir ao estado 16
+    FECHA_PARENTESES  deslocar, e ir ao estado 56
 
 
 Estado 45
 
-   14 maisDecl: VIRGULA IDENTIFICADOR • maisDecl
-   18 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
+   34 print: PRINT ABRE_PARENTESES error • FECHA_PARENTESES
 
-    OP_ATRIBUICAO  deslocar, e ir ao estado 22
-    VIRGULA        deslocar, e ir ao estado 40
-
-    $padrão  reduzir usando a regra 15 (maisDecl)
-
-    maisDecl  ir ao estado 49
+    FECHA_PARENTESES  deslocar, e ir ao estado 57
 
 
 Estado 46
 
-   13 maisDecl: VIRGULA atribuicao • maisDecl
+   33 print: PRINT ABRE_PARENTESES LITERAL • maisExpr FECHA_PARENTESES
 
-    VIRGULA  deslocar, e ir ao estado 40
+    VIRGULA  deslocar, e ir ao estado 58
 
-    $padrão  reduzir usando a regra 15 (maisDecl)
+    $padrão  reduzir usando a regra 37 (maisExpr)
 
-    maisDecl  ir ao estado 50
+    maisExpr  ir ao estado 59
 
 
 Estado 47
 
-   25 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando • ELSE comando
-   26        | IF ABRE_PARENTESES expr FECHA_PARENTESES comando •
+   32 print: PRINT ABRE_PARENTESES expr • maisExpr FECHA_PARENTESES
 
-    ELSE  deslocar, e ir ao estado 51
+    VIRGULA  deslocar, e ir ao estado 58
 
-    $padrão  reduzir usando a regra 26 (if_stmt)
+    $padrão  reduzir usando a regra 37 (maisExpr)
+
+    maisExpr  ir ao estado 60
 
 
 Estado 48
 
-   23 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando •
+   31 read: READ ABRE_PARENTESES error • FECHA_PARENTESES
 
-    $padrão  reduzir usando a regra 23 (while_stmt)
+    FECHA_PARENTESES  deslocar, e ir ao estado 61
 
 
 Estado 49
 
-   14 maisDecl: VIRGULA IDENTIFICADOR maisDecl •
+   30 read: READ ABRE_PARENTESES IDENTIFICADOR • FECHA_PARENTESES
 
-    $padrão  reduzir usando a regra 14 (maisDecl)
+    FECHA_PARENTESES  deslocar, e ir ao estado 62
 
 
 Estado 50
 
-   13 maisDecl: VIRGULA atribuicao maisDecl •
+   20 atribuicao: IDENTIFICADOR OP_ATRIBUICAO expr •
 
-    $padrão  reduzir usando a regra 13 (maisDecl)
+    $padrão  reduzir usando a regra 20 (atribuicao)
 
 
 Estado 51
 
-   25 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE • comando
+   24 bloco: ABRE_CHAVES comandos FECHA_CHAVES •
 
-    error          deslocar, e ir ao estado 1
-    TIPO_INT       deslocar, e ir ao estado 2
-    TIPO_BOOL      deslocar, e ir ao estado 3
-    IF             deslocar, e ir ao estado 4
-    WHILE          deslocar, e ir ao estado 5
-    IDENTIFICADOR  deslocar, e ir ao estado 6
-    ABRE_CHAVES    deslocar, e ir ao estado 7
-
-    comando     ir ao estado 52
-    declaracao  ir ao estado 11
-    tipo        ir ao estado 12
-    atribuicao  ir ao estado 13
-    bloco       ir ao estado 14
-    while_stmt  ir ao estado 15
-    if_stmt     ir ao estado 16
+    $padrão  reduzir usando a regra 24 (bloco)
 
 
 Estado 52
 
-   25 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando •
+   15 maisDecl: VIRGULA • atribuicao maisDecl
+   16         | VIRGULA • IDENTIFICADOR maisDecl
 
-    $padrão  reduzir usando a regra 25 (if_stmt)
+    IDENTIFICADOR  deslocar, e ir ao estado 63
+
+    atribuicao  ir ao estado 64
+
+
+Estado 53
+
+   14 declaracoes: IDENTIFICADOR maisDecl •
+
+    $padrão  reduzir usando a regra 14 (declaracoes)
+
+
+Estado 54
+
+   13 declaracoes: atribuicao maisDecl •
+
+    $padrão  reduzir usando a regra 13 (declaracoes)
+
+
+Estado 55
+
+   27 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES • comando ELSE comando
+   28        | IF ABRE_PARENTESES expr FECHA_PARENTESES • comando
+
+    error          deslocar, e ir ao estado 4
+    TIPO_INT       deslocar, e ir ao estado 5
+    TIPO_BOOL      deslocar, e ir ao estado 6
+    IF             deslocar, e ir ao estado 7
+    WHILE          deslocar, e ir ao estado 8
+    PRINT          deslocar, e ir ao estado 9
+    READ           deslocar, e ir ao estado 10
+    IDENTIFICADOR  deslocar, e ir ao estado 11
+    ABRE_CHAVES    deslocar, e ir ao estado 12
+
+    comando     ir ao estado 65
+    declaracao  ir ao estado 14
+    tipo        ir ao estado 15
+    atribuicao  ir ao estado 16
+    bloco       ir ao estado 17
+    while_stmt  ir ao estado 18
+    if_stmt     ir ao estado 19
+    read        ir ao estado 20
+    print       ir ao estado 21
+
+
+Estado 56
+
+   25 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES • comando
+
+    error          deslocar, e ir ao estado 4
+    TIPO_INT       deslocar, e ir ao estado 5
+    TIPO_BOOL      deslocar, e ir ao estado 6
+    IF             deslocar, e ir ao estado 7
+    WHILE          deslocar, e ir ao estado 8
+    PRINT          deslocar, e ir ao estado 9
+    READ           deslocar, e ir ao estado 10
+    IDENTIFICADOR  deslocar, e ir ao estado 11
+    ABRE_CHAVES    deslocar, e ir ao estado 12
+
+    comando     ir ao estado 66
+    declaracao  ir ao estado 14
+    tipo        ir ao estado 15
+    atribuicao  ir ao estado 16
+    bloco       ir ao estado 17
+    while_stmt  ir ao estado 18
+    if_stmt     ir ao estado 19
+    read        ir ao estado 20
+    print       ir ao estado 21
+
+
+Estado 57
+
+   34 print: PRINT ABRE_PARENTESES error FECHA_PARENTESES •
+
+    $padrão  reduzir usando a regra 34 (print)
+
+
+Estado 58
+
+   35 maisExpr: VIRGULA • expr maisExpr
+   36         | VIRGULA • LITERAL maisExpr
+
+    IDENTIFICADOR         deslocar, e ir ao estado 39
+    NUM_INTEIRO           deslocar, e ir ao estado 40
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 41
+    LITERAL               deslocar, e ir ao estado 67
+
+    expr  ir ao estado 68
+
+
+Estado 59
+
+   33 print: PRINT ABRE_PARENTESES LITERAL maisExpr • FECHA_PARENTESES
+
+    FECHA_PARENTESES  deslocar, e ir ao estado 69
+
+
+Estado 60
+
+   32 print: PRINT ABRE_PARENTESES expr maisExpr • FECHA_PARENTESES
+
+    FECHA_PARENTESES  deslocar, e ir ao estado 70
+
+
+Estado 61
+
+   31 read: READ ABRE_PARENTESES error FECHA_PARENTESES •
+
+    $padrão  reduzir usando a regra 31 (read)
+
+
+Estado 62
+
+   30 read: READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES •
+
+    $padrão  reduzir usando a regra 30 (read)
+
+
+Estado 63
+
+   16 maisDecl: VIRGULA IDENTIFICADOR • maisDecl
+   20 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
+
+    OP_ATRIBUICAO  deslocar, e ir ao estado 29
+    VIRGULA        deslocar, e ir ao estado 52
+
+    $padrão  reduzir usando a regra 17 (maisDecl)
+
+    maisDecl  ir ao estado 71
+
+
+Estado 64
+
+   15 maisDecl: VIRGULA atribuicao • maisDecl
+
+    VIRGULA  deslocar, e ir ao estado 52
+
+    $padrão  reduzir usando a regra 17 (maisDecl)
+
+    maisDecl  ir ao estado 72
+
+
+Estado 65
+
+   27 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando • ELSE comando
+   28        | IF ABRE_PARENTESES expr FECHA_PARENTESES comando •
+
+    ELSE  deslocar, e ir ao estado 73
+
+    $padrão  reduzir usando a regra 28 (if_stmt)
+
+
+Estado 66
+
+   25 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando •
+
+    $padrão  reduzir usando a regra 25 (while_stmt)
+
+
+Estado 67
+
+   36 maisExpr: VIRGULA LITERAL • maisExpr
+
+    VIRGULA  deslocar, e ir ao estado 58
+
+    $padrão  reduzir usando a regra 37 (maisExpr)
+
+    maisExpr  ir ao estado 74
+
+
+Estado 68
+
+   35 maisExpr: VIRGULA expr • maisExpr
+
+    VIRGULA  deslocar, e ir ao estado 58
+
+    $padrão  reduzir usando a regra 37 (maisExpr)
+
+    maisExpr  ir ao estado 75
+
+
+Estado 69
+
+   33 print: PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES •
+
+    $padrão  reduzir usando a regra 33 (print)
+
+
+Estado 70
+
+   32 print: PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES •
+
+    $padrão  reduzir usando a regra 32 (print)
+
+
+Estado 71
+
+   16 maisDecl: VIRGULA IDENTIFICADOR maisDecl •
+
+    $padrão  reduzir usando a regra 16 (maisDecl)
+
+
+Estado 72
+
+   15 maisDecl: VIRGULA atribuicao maisDecl •
+
+    $padrão  reduzir usando a regra 15 (maisDecl)
+
+
+Estado 73
+
+   27 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE • comando
+
+    error          deslocar, e ir ao estado 4
+    TIPO_INT       deslocar, e ir ao estado 5
+    TIPO_BOOL      deslocar, e ir ao estado 6
+    IF             deslocar, e ir ao estado 7
+    WHILE          deslocar, e ir ao estado 8
+    PRINT          deslocar, e ir ao estado 9
+    READ           deslocar, e ir ao estado 10
+    IDENTIFICADOR  deslocar, e ir ao estado 11
+    ABRE_CHAVES    deslocar, e ir ao estado 12
+
+    comando     ir ao estado 76
+    declaracao  ir ao estado 14
+    tipo        ir ao estado 15
+    atribuicao  ir ao estado 16
+    bloco       ir ao estado 17
+    while_stmt  ir ao estado 18
+    if_stmt     ir ao estado 19
+    read        ir ao estado 20
+    print       ir ao estado 21
+
+
+Estado 74
+
+   36 maisExpr: VIRGULA LITERAL maisExpr •
+
+    $padrão  reduzir usando a regra 36 (maisExpr)
+
+
+Estado 75
+
+   35 maisExpr: VIRGULA expr maisExpr •
+
+    $padrão  reduzir usando a regra 35 (maisExpr)
+
+
+Estado 76
+
+   27 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando •
+
+    $padrão  reduzir usando a regra 27 (if_stmt)

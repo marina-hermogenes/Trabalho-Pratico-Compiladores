@@ -7,6 +7,8 @@
     extern int coluna;
     extern char *yytext;
 
+    extern void imprimirTabela();
+
     int yylex(void);
     void yyerror(const char *s);
 %}
@@ -16,6 +18,7 @@
 %token OP_ATRIBUICAO OP_RELACIONAL OP_ARITMETICO OP_LOGICO NOT
 %token ABRE_PARENTESES FECHA_PARENTESES ABRE_CHAVES FECHA_CHAVES
 %token PONTO_E_VIRGULA VIRGULA
+%token LITERAL
 
 
 /* Precedencia para resolver o "dangling else". Perguntar ao professor sobre possivel mudança depois. */
@@ -28,7 +31,7 @@ programa
     ;
 
 comandos
-    : comando comandos
+    : comandos comando
     |
     ;
 
@@ -36,8 +39,8 @@ comando
     : declaracao PONTO_E_VIRGULA
     | atribuicao PONTO_E_VIRGULA
     | bloco
- //   | print PONTO_E_VIRGULA
- //   | read PONTO_E_VIRGULA
+    | print PONTO_E_VIRGULA
+    | read PONTO_E_VIRGULA
     | if_stmt
     | while_stmt
     | error PONTO_E_VIRGULA {fprintf(stderr, "Comando inválido na linha %d. Sincronizando com ';'.\n", linha); yyerrok;}
@@ -109,6 +112,29 @@ if_stmt
       }
     ;
 
+read
+    : READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES
+    | READ ABRE_PARENTESES error FECHA_PARENTESES {
+        fprintf(stderr, "Erro na formatação do read na linha %d. Sincronizando com ';'.\n", linha);
+        yyerrok;
+        }
+    ;
+
+print
+    : PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
+    | PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
+    | PRINT ABRE_PARENTESES error FECHA_PARENTESES {
+        fprintf(stderr, "Erro na formatação do print na linha %d. Sincronizando com ';'.\n", linha);
+        yyerrok;
+        }
+    ;
+
+maisExpr
+    : VIRGULA expr maisExpr
+    | VIRGULA LITERAL maisExpr
+    |
+    ;
+
 %%
 
 
@@ -127,6 +153,7 @@ int main(void) {
     printf("Iniciando parser...\n");
     yyparse();
     printf("Parse finalizado\n");
+    imprimirTabela();
     return 0;
 }
 
