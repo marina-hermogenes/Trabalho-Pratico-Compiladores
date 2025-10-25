@@ -54,28 +54,26 @@ Gramática
    40        | IF error PONTO_E_VIRGULA
 
    41 read: READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES
-   42     | READ ABRE_PARENTESES error FECHA_PARENTESES
 
-   43 print: PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
-   44      | PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
-   45      | PRINT ABRE_PARENTESES error FECHA_PARENTESES
+   42 print: PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
+   43      | PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
 
-   46 maisExpr: VIRGULA expr maisExpr
-   47         | VIRGULA LITERAL maisExpr
-   48         | ε
+   44 maisExpr: VIRGULA expr maisExpr
+   45         | VIRGULA LITERAL maisExpr
+   46         | ε
 
 
 Terminais, com as regras onde eles aparecem
 
     $end (0) 0
-    error (256) 11 37 40 42 45
+    error (256) 11 37 40
     TIPO_INT (258) 17
     TIPO_BOOL (259) 18
     IF (260) 38 39 40
     ELSE (261) 38
     WHILE (262) 36 37
-    PRINT (263) 43 44 45
-    READ (264) 41 42
+    PRINT (263) 42 43
+    READ (264) 41
     TRUE (265) 33
     FALSE (266) 34
     IDENTIFICADOR (267) 13 15 19 30 41
@@ -85,13 +83,13 @@ Terminais, com as regras onde eles aparecem
     OP_RELACIONAL (271) 25
     OP_LOGICO (272) 26
     NOT (273) 27
-    ABRE_PARENTESES (274) 29 36 38 39 41 42 43 44 45
-    FECHA_PARENTESES (275) 29 36 38 39 41 42 43 44 45
+    ABRE_PARENTESES (274) 29 36 38 39 41 42 43
+    FECHA_PARENTESES (275) 29 36 38 39 41 42 43
     ABRE_CHAVES (276) 35
     FECHA_CHAVES (277) 35
     PONTO_E_VIRGULA (278) 4 5 7 8 11 37 40
-    VIRGULA (279) 14 15 46 47
-    LITERAL (280) 44 47
+    VIRGULA (279) 14 15 44 45
+    LITERAL (280) 43 45
     MAIS (281) 20
     MENOS (282) 21 28
     MULT (283) 22
@@ -128,7 +126,7 @@ Não terminais com as regras onde eles aparecem
         à direita: 5 12 14
     expr (41)
         à esquerda: 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
-        à direita: 19 20 21 22 23 24 25 26 27 28 29 36 38 39 43 46
+        à direita: 19 20 21 22 23 24 25 26 27 28 29 36 38 39 42 44
     bloco (42)
         à esquerda: 35
         à direita: 6
@@ -139,14 +137,14 @@ Não terminais com as regras onde eles aparecem
         à esquerda: 38 39 40
         à direita: 9
     read (45)
-        à esquerda: 41 42
+        à esquerda: 41
         à direita: 8
     print (46)
-        à esquerda: 43 44 45
+        à esquerda: 42 43
         à direita: 7
     maisExpr (47)
-        à esquerda: 46 47 48
-        à direita: 43 44 46 47
+        à esquerda: 44 45 46
+        à direita: 42 43 44 45
 
 
 Estado 0
@@ -243,9 +241,8 @@ Estado 8
 
 Estado 9
 
-   43 print: PRINT • ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
-   44      | PRINT • ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
-   45      | PRINT • ABRE_PARENTESES error FECHA_PARENTESES
+   42 print: PRINT • ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
+   43      | PRINT • ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
 
     ABRE_PARENTESES  deslocar, e ir ao estado 27
 
@@ -253,7 +250,6 @@ Estado 9
 Estado 10
 
    41 read: READ • ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES
-   42     | READ • ABRE_PARENTESES error FECHA_PARENTESES
 
     ABRE_PARENTESES  deslocar, e ir ao estado 28
 
@@ -396,11 +392,9 @@ Estado 26
 
 Estado 27
 
-   43 print: PRINT ABRE_PARENTESES • expr maisExpr FECHA_PARENTESES
-   44      | PRINT ABRE_PARENTESES • LITERAL maisExpr FECHA_PARENTESES
-   45      | PRINT ABRE_PARENTESES • error FECHA_PARENTESES
+   42 print: PRINT ABRE_PARENTESES • expr maisExpr FECHA_PARENTESES
+   43      | PRINT ABRE_PARENTESES • LITERAL maisExpr FECHA_PARENTESES
 
-    error                 deslocar, e ir ao estado 49
     TRUE                  deslocar, e ir ao estado 38
     FALSE                 deslocar, e ir ao estado 39
     IDENTIFICADOR         deslocar, e ir ao estado 40
@@ -408,19 +402,17 @@ Estado 27
     NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
     NOT                   deslocar, e ir ao estado 43
     ABRE_PARENTESES       deslocar, e ir ao estado 44
-    LITERAL               deslocar, e ir ao estado 50
+    LITERAL               deslocar, e ir ao estado 49
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 51
+    expr  ir ao estado 50
 
 
 Estado 28
 
    41 read: READ ABRE_PARENTESES • IDENTIFICADOR FECHA_PARENTESES
-   42     | READ ABRE_PARENTESES • error FECHA_PARENTESES
 
-    error          deslocar, e ir ao estado 52
-    IDENTIFICADOR  deslocar, e ir ao estado 53
+    IDENTIFICADOR  deslocar, e ir ao estado 51
 
 
 Estado 29
@@ -436,7 +428,7 @@ Estado 29
     ABRE_PARENTESES       deslocar, e ir ao estado 44
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 54
+    expr  ir ao estado 52
 
 
 Estado 30
@@ -453,7 +445,7 @@ Estado 30
     READ           deslocar, e ir ao estado 10
     IDENTIFICADOR  deslocar, e ir ao estado 11
     ABRE_CHAVES    deslocar, e ir ao estado 12
-    FECHA_CHAVES   deslocar, e ir ao estado 55
+    FECHA_CHAVES   deslocar, e ir ao estado 53
 
     comando     ir ao estado 13
     declaracao  ir ao estado 14
@@ -479,22 +471,22 @@ Estado 32
    19 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
 
     OP_ATRIBUICAO  deslocar, e ir ao estado 29
-    VIRGULA        deslocar, e ir ao estado 56
+    VIRGULA        deslocar, e ir ao estado 54
 
     $padrão  reduzir usando a regra 16 (maisDecl)
 
-    maisDecl  ir ao estado 57
+    maisDecl  ir ao estado 55
 
 
 Estado 33
 
    12 declaracao: tipo atribuicao • maisDecl
 
-    VIRGULA  deslocar, e ir ao estado 56
+    VIRGULA  deslocar, e ir ao estado 54
 
     $padrão  reduzir usando a regra 16 (maisDecl)
 
-    maisDecl  ir ao estado 58
+    maisDecl  ir ao estado 56
 
 
 Estado 34
@@ -573,7 +565,7 @@ Estado 43
     ABRE_PARENTESES       deslocar, e ir ao estado 44
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 59
+    expr  ir ao estado 57
 
 
 Estado 44
@@ -589,7 +581,7 @@ Estado 44
     ABRE_PARENTESES       deslocar, e ir ao estado 44
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 60
+    expr  ir ao estado 58
 
 
 Estado 45
@@ -605,7 +597,7 @@ Estado 45
     ABRE_PARENTESES       deslocar, e ir ao estado 44
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 61
+    expr  ir ao estado 59
 
 
 Estado 46
@@ -620,14 +612,14 @@ Estado 46
    38 if_stmt: IF ABRE_PARENTESES expr • FECHA_PARENTESES comando ELSE comando
    39        | IF ABRE_PARENTESES expr • FECHA_PARENTESES comando
 
-    OP_RELACIONAL     deslocar, e ir ao estado 62
-    OP_LOGICO         deslocar, e ir ao estado 63
-    FECHA_PARENTESES  deslocar, e ir ao estado 64
-    MAIS              deslocar, e ir ao estado 65
-    MENOS             deslocar, e ir ao estado 66
-    MULT              deslocar, e ir ao estado 67
-    DIV               deslocar, e ir ao estado 68
-    MOD               deslocar, e ir ao estado 69
+    OP_RELACIONAL     deslocar, e ir ao estado 60
+    OP_LOGICO         deslocar, e ir ao estado 61
+    FECHA_PARENTESES  deslocar, e ir ao estado 62
+    MAIS              deslocar, e ir ao estado 63
+    MENOS             deslocar, e ir ao estado 64
+    MULT              deslocar, e ir ao estado 65
+    DIV               deslocar, e ir ao estado 66
+    MOD               deslocar, e ir ao estado 67
 
 
 Estado 47
@@ -648,35 +640,28 @@ Estado 48
    26     | expr • OP_LOGICO expr
    36 while_stmt: WHILE ABRE_PARENTESES expr • FECHA_PARENTESES comando
 
-    OP_RELACIONAL     deslocar, e ir ao estado 62
-    OP_LOGICO         deslocar, e ir ao estado 63
-    FECHA_PARENTESES  deslocar, e ir ao estado 70
-    MAIS              deslocar, e ir ao estado 65
-    MENOS             deslocar, e ir ao estado 66
-    MULT              deslocar, e ir ao estado 67
-    DIV               deslocar, e ir ao estado 68
-    MOD               deslocar, e ir ao estado 69
+    OP_RELACIONAL     deslocar, e ir ao estado 60
+    OP_LOGICO         deslocar, e ir ao estado 61
+    FECHA_PARENTESES  deslocar, e ir ao estado 68
+    MAIS              deslocar, e ir ao estado 63
+    MENOS             deslocar, e ir ao estado 64
+    MULT              deslocar, e ir ao estado 65
+    DIV               deslocar, e ir ao estado 66
+    MOD               deslocar, e ir ao estado 67
 
 
 Estado 49
 
-   45 print: PRINT ABRE_PARENTESES error • FECHA_PARENTESES
+   43 print: PRINT ABRE_PARENTESES LITERAL • maisExpr FECHA_PARENTESES
 
-    FECHA_PARENTESES  deslocar, e ir ao estado 71
+    VIRGULA  deslocar, e ir ao estado 69
+
+    $padrão  reduzir usando a regra 46 (maisExpr)
+
+    maisExpr  ir ao estado 70
 
 
 Estado 50
-
-   44 print: PRINT ABRE_PARENTESES LITERAL • maisExpr FECHA_PARENTESES
-
-    VIRGULA  deslocar, e ir ao estado 72
-
-    $padrão  reduzir usando a regra 48 (maisExpr)
-
-    maisExpr  ir ao estado 73
-
-
-Estado 51
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -685,37 +670,30 @@ Estado 51
    24     | expr • MOD expr
    25     | expr • OP_RELACIONAL expr
    26     | expr • OP_LOGICO expr
-   43 print: PRINT ABRE_PARENTESES expr • maisExpr FECHA_PARENTESES
+   42 print: PRINT ABRE_PARENTESES expr • maisExpr FECHA_PARENTESES
 
-    OP_RELACIONAL  deslocar, e ir ao estado 62
-    OP_LOGICO      deslocar, e ir ao estado 63
-    VIRGULA        deslocar, e ir ao estado 72
-    MAIS           deslocar, e ir ao estado 65
-    MENOS          deslocar, e ir ao estado 66
-    MULT           deslocar, e ir ao estado 67
-    DIV            deslocar, e ir ao estado 68
-    MOD            deslocar, e ir ao estado 69
+    OP_RELACIONAL  deslocar, e ir ao estado 60
+    OP_LOGICO      deslocar, e ir ao estado 61
+    VIRGULA        deslocar, e ir ao estado 69
+    MAIS           deslocar, e ir ao estado 63
+    MENOS          deslocar, e ir ao estado 64
+    MULT           deslocar, e ir ao estado 65
+    DIV            deslocar, e ir ao estado 66
+    MOD            deslocar, e ir ao estado 67
 
-    $padrão  reduzir usando a regra 48 (maisExpr)
+    $padrão  reduzir usando a regra 46 (maisExpr)
 
-    maisExpr  ir ao estado 74
-
-
-Estado 52
-
-   42 read: READ ABRE_PARENTESES error • FECHA_PARENTESES
-
-    FECHA_PARENTESES  deslocar, e ir ao estado 75
+    maisExpr  ir ao estado 71
 
 
-Estado 53
+Estado 51
 
    41 read: READ ABRE_PARENTESES IDENTIFICADOR • FECHA_PARENTESES
 
-    FECHA_PARENTESES  deslocar, e ir ao estado 76
+    FECHA_PARENTESES  deslocar, e ir ao estado 72
 
 
-Estado 54
+Estado 52
 
    19 atribuicao: IDENTIFICADOR OP_ATRIBUICAO expr •
    20 expr: expr • MAIS expr
@@ -726,49 +704,49 @@ Estado 54
    25     | expr • OP_RELACIONAL expr
    26     | expr • OP_LOGICO expr
 
-    OP_RELACIONAL  deslocar, e ir ao estado 62
-    OP_LOGICO      deslocar, e ir ao estado 63
-    MAIS           deslocar, e ir ao estado 65
-    MENOS          deslocar, e ir ao estado 66
-    MULT           deslocar, e ir ao estado 67
-    DIV            deslocar, e ir ao estado 68
-    MOD            deslocar, e ir ao estado 69
+    OP_RELACIONAL  deslocar, e ir ao estado 60
+    OP_LOGICO      deslocar, e ir ao estado 61
+    MAIS           deslocar, e ir ao estado 63
+    MENOS          deslocar, e ir ao estado 64
+    MULT           deslocar, e ir ao estado 65
+    DIV            deslocar, e ir ao estado 66
+    MOD            deslocar, e ir ao estado 67
 
     $padrão  reduzir usando a regra 19 (atribuicao)
 
 
-Estado 55
+Estado 53
 
    35 bloco: ABRE_CHAVES comandos FECHA_CHAVES •
 
     $padrão  reduzir usando a regra 35 (bloco)
 
 
-Estado 56
+Estado 54
 
    14 maisDecl: VIRGULA • atribuicao maisDecl
    15         | VIRGULA • IDENTIFICADOR maisDecl
 
-    IDENTIFICADOR  deslocar, e ir ao estado 77
+    IDENTIFICADOR  deslocar, e ir ao estado 73
 
-    atribuicao  ir ao estado 78
+    atribuicao  ir ao estado 74
 
 
-Estado 57
+Estado 55
 
    13 declaracao: tipo IDENTIFICADOR maisDecl •
 
     $padrão  reduzir usando a regra 13 (declaracao)
 
 
-Estado 58
+Estado 56
 
    12 declaracao: tipo atribuicao maisDecl •
 
     $padrão  reduzir usando a regra 12 (declaracao)
 
 
-Estado 59
+Estado 57
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -782,7 +760,7 @@ Estado 59
     $padrão  reduzir usando a regra 27 (expr)
 
 
-Estado 60
+Estado 58
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -793,17 +771,17 @@ Estado 60
    26     | expr • OP_LOGICO expr
    29     | ABRE_PARENTESES expr • FECHA_PARENTESES
 
-    OP_RELACIONAL     deslocar, e ir ao estado 62
-    OP_LOGICO         deslocar, e ir ao estado 63
-    FECHA_PARENTESES  deslocar, e ir ao estado 79
-    MAIS              deslocar, e ir ao estado 65
-    MENOS             deslocar, e ir ao estado 66
-    MULT              deslocar, e ir ao estado 67
-    DIV               deslocar, e ir ao estado 68
-    MOD               deslocar, e ir ao estado 69
+    OP_RELACIONAL     deslocar, e ir ao estado 60
+    OP_LOGICO         deslocar, e ir ao estado 61
+    FECHA_PARENTESES  deslocar, e ir ao estado 75
+    MAIS              deslocar, e ir ao estado 63
+    MENOS             deslocar, e ir ao estado 64
+    MULT              deslocar, e ir ao estado 65
+    DIV               deslocar, e ir ao estado 66
+    MOD               deslocar, e ir ao estado 67
 
 
-Estado 61
+Estado 59
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -817,7 +795,7 @@ Estado 61
     $padrão  reduzir usando a regra 28 (expr)
 
 
-Estado 62
+Estado 60
 
    25 expr: expr OP_RELACIONAL • expr
 
@@ -830,10 +808,10 @@ Estado 62
     ABRE_PARENTESES       deslocar, e ir ao estado 44
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 80
+    expr  ir ao estado 76
 
 
-Estado 63
+Estado 61
 
    26 expr: expr OP_LOGICO • expr
 
@@ -846,10 +824,10 @@ Estado 63
     ABRE_PARENTESES       deslocar, e ir ao estado 44
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 81
+    expr  ir ao estado 77
 
 
-Estado 64
+Estado 62
 
    38 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES • comando ELSE comando
    39        | IF ABRE_PARENTESES expr FECHA_PARENTESES • comando
@@ -864,7 +842,7 @@ Estado 64
     IDENTIFICADOR  deslocar, e ir ao estado 11
     ABRE_CHAVES    deslocar, e ir ao estado 12
 
-    comando     ir ao estado 82
+    comando     ir ao estado 78
     declaracao  ir ao estado 14
     tipo        ir ao estado 15
     atribuicao  ir ao estado 16
@@ -875,9 +853,73 @@ Estado 64
     print       ir ao estado 21
 
 
-Estado 65
+Estado 63
 
    20 expr: expr MAIS • expr
+
+    TRUE                  deslocar, e ir ao estado 38
+    FALSE                 deslocar, e ir ao estado 39
+    IDENTIFICADOR         deslocar, e ir ao estado 40
+    NUM_INTEIRO           deslocar, e ir ao estado 41
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
+    NOT                   deslocar, e ir ao estado 43
+    ABRE_PARENTESES       deslocar, e ir ao estado 44
+    MENOS                 deslocar, e ir ao estado 45
+
+    expr  ir ao estado 79
+
+
+Estado 64
+
+   21 expr: expr MENOS • expr
+
+    TRUE                  deslocar, e ir ao estado 38
+    FALSE                 deslocar, e ir ao estado 39
+    IDENTIFICADOR         deslocar, e ir ao estado 40
+    NUM_INTEIRO           deslocar, e ir ao estado 41
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
+    NOT                   deslocar, e ir ao estado 43
+    ABRE_PARENTESES       deslocar, e ir ao estado 44
+    MENOS                 deslocar, e ir ao estado 45
+
+    expr  ir ao estado 80
+
+
+Estado 65
+
+   22 expr: expr MULT • expr
+
+    TRUE                  deslocar, e ir ao estado 38
+    FALSE                 deslocar, e ir ao estado 39
+    IDENTIFICADOR         deslocar, e ir ao estado 40
+    NUM_INTEIRO           deslocar, e ir ao estado 41
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
+    NOT                   deslocar, e ir ao estado 43
+    ABRE_PARENTESES       deslocar, e ir ao estado 44
+    MENOS                 deslocar, e ir ao estado 45
+
+    expr  ir ao estado 81
+
+
+Estado 66
+
+   23 expr: expr DIV • expr
+
+    TRUE                  deslocar, e ir ao estado 38
+    FALSE                 deslocar, e ir ao estado 39
+    IDENTIFICADOR         deslocar, e ir ao estado 40
+    NUM_INTEIRO           deslocar, e ir ao estado 41
+    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
+    NOT                   deslocar, e ir ao estado 43
+    ABRE_PARENTESES       deslocar, e ir ao estado 44
+    MENOS                 deslocar, e ir ao estado 45
+
+    expr  ir ao estado 82
+
+
+Estado 67
+
+   24 expr: expr MOD • expr
 
     TRUE                  deslocar, e ir ao estado 38
     FALSE                 deslocar, e ir ao estado 39
@@ -891,71 +933,7 @@ Estado 65
     expr  ir ao estado 83
 
 
-Estado 66
-
-   21 expr: expr MENOS • expr
-
-    TRUE                  deslocar, e ir ao estado 38
-    FALSE                 deslocar, e ir ao estado 39
-    IDENTIFICADOR         deslocar, e ir ao estado 40
-    NUM_INTEIRO           deslocar, e ir ao estado 41
-    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
-    NOT                   deslocar, e ir ao estado 43
-    ABRE_PARENTESES       deslocar, e ir ao estado 44
-    MENOS                 deslocar, e ir ao estado 45
-
-    expr  ir ao estado 84
-
-
-Estado 67
-
-   22 expr: expr MULT • expr
-
-    TRUE                  deslocar, e ir ao estado 38
-    FALSE                 deslocar, e ir ao estado 39
-    IDENTIFICADOR         deslocar, e ir ao estado 40
-    NUM_INTEIRO           deslocar, e ir ao estado 41
-    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
-    NOT                   deslocar, e ir ao estado 43
-    ABRE_PARENTESES       deslocar, e ir ao estado 44
-    MENOS                 deslocar, e ir ao estado 45
-
-    expr  ir ao estado 85
-
-
 Estado 68
-
-   23 expr: expr DIV • expr
-
-    TRUE                  deslocar, e ir ao estado 38
-    FALSE                 deslocar, e ir ao estado 39
-    IDENTIFICADOR         deslocar, e ir ao estado 40
-    NUM_INTEIRO           deslocar, e ir ao estado 41
-    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
-    NOT                   deslocar, e ir ao estado 43
-    ABRE_PARENTESES       deslocar, e ir ao estado 44
-    MENOS                 deslocar, e ir ao estado 45
-
-    expr  ir ao estado 86
-
-
-Estado 69
-
-   24 expr: expr MOD • expr
-
-    TRUE                  deslocar, e ir ao estado 38
-    FALSE                 deslocar, e ir ao estado 39
-    IDENTIFICADOR         deslocar, e ir ao estado 40
-    NUM_INTEIRO           deslocar, e ir ao estado 41
-    NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
-    NOT                   deslocar, e ir ao estado 43
-    ABRE_PARENTESES       deslocar, e ir ao estado 44
-    MENOS                 deslocar, e ir ao estado 45
-
-    expr  ir ao estado 87
-
-
-Estado 70
 
    36 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES • comando
 
@@ -969,7 +947,7 @@ Estado 70
     IDENTIFICADOR  deslocar, e ir ao estado 11
     ABRE_CHAVES    deslocar, e ir ao estado 12
 
-    comando     ir ao estado 88
+    comando     ir ao estado 84
     declaracao  ir ao estado 14
     tipo        ir ao estado 15
     atribuicao  ir ao estado 16
@@ -980,17 +958,10 @@ Estado 70
     print       ir ao estado 21
 
 
-Estado 71
+Estado 69
 
-   45 print: PRINT ABRE_PARENTESES error FECHA_PARENTESES •
-
-    $padrão  reduzir usando a regra 45 (print)
-
-
-Estado 72
-
-   46 maisExpr: VIRGULA • expr maisExpr
-   47         | VIRGULA • LITERAL maisExpr
+   44 maisExpr: VIRGULA • expr maisExpr
+   45         | VIRGULA • LITERAL maisExpr
 
     TRUE                  deslocar, e ir ao estado 38
     FALSE                 deslocar, e ir ao estado 39
@@ -999,72 +970,65 @@ Estado 72
     NUM_INTEIRO_NEGATIVO  deslocar, e ir ao estado 42
     NOT                   deslocar, e ir ao estado 43
     ABRE_PARENTESES       deslocar, e ir ao estado 44
-    LITERAL               deslocar, e ir ao estado 89
+    LITERAL               deslocar, e ir ao estado 85
     MENOS                 deslocar, e ir ao estado 45
 
-    expr  ir ao estado 90
+    expr  ir ao estado 86
 
 
-Estado 73
+Estado 70
 
-   44 print: PRINT ABRE_PARENTESES LITERAL maisExpr • FECHA_PARENTESES
+   43 print: PRINT ABRE_PARENTESES LITERAL maisExpr • FECHA_PARENTESES
 
-    FECHA_PARENTESES  deslocar, e ir ao estado 91
-
-
-Estado 74
-
-   43 print: PRINT ABRE_PARENTESES expr maisExpr • FECHA_PARENTESES
-
-    FECHA_PARENTESES  deslocar, e ir ao estado 92
+    FECHA_PARENTESES  deslocar, e ir ao estado 87
 
 
-Estado 75
+Estado 71
 
-   42 read: READ ABRE_PARENTESES error FECHA_PARENTESES •
+   42 print: PRINT ABRE_PARENTESES expr maisExpr • FECHA_PARENTESES
 
-    $padrão  reduzir usando a regra 42 (read)
+    FECHA_PARENTESES  deslocar, e ir ao estado 88
 
 
-Estado 76
+Estado 72
 
    41 read: READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES •
 
     $padrão  reduzir usando a regra 41 (read)
 
 
-Estado 77
+Estado 73
 
    15 maisDecl: VIRGULA IDENTIFICADOR • maisDecl
    19 atribuicao: IDENTIFICADOR • OP_ATRIBUICAO expr
 
     OP_ATRIBUICAO  deslocar, e ir ao estado 29
-    VIRGULA        deslocar, e ir ao estado 56
+    VIRGULA        deslocar, e ir ao estado 54
 
     $padrão  reduzir usando a regra 16 (maisDecl)
 
-    maisDecl  ir ao estado 93
+    maisDecl  ir ao estado 89
 
 
-Estado 78
+Estado 74
 
    14 maisDecl: VIRGULA atribuicao • maisDecl
 
-    VIRGULA  deslocar, e ir ao estado 56
+    VIRGULA  deslocar, e ir ao estado 54
 
     $padrão  reduzir usando a regra 16 (maisDecl)
 
-    maisDecl  ir ao estado 94
+    maisDecl  ir ao estado 90
 
 
-Estado 79
+Estado 75
 
    29 expr: ABRE_PARENTESES expr FECHA_PARENTESES •
 
     $padrão  reduzir usando a regra 29 (expr)
 
 
-Estado 80
+Estado 76
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -1075,16 +1039,16 @@ Estado 80
    25     | expr OP_RELACIONAL expr •
    26     | expr • OP_LOGICO expr
 
-    MAIS   deslocar, e ir ao estado 65
-    MENOS  deslocar, e ir ao estado 66
-    MULT   deslocar, e ir ao estado 67
-    DIV    deslocar, e ir ao estado 68
-    MOD    deslocar, e ir ao estado 69
+    MAIS   deslocar, e ir ao estado 63
+    MENOS  deslocar, e ir ao estado 64
+    MULT   deslocar, e ir ao estado 65
+    DIV    deslocar, e ir ao estado 66
+    MOD    deslocar, e ir ao estado 67
 
     $padrão  reduzir usando a regra 25 (expr)
 
 
-Estado 81
+Estado 77
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -1095,27 +1059,27 @@ Estado 81
    26     | expr • OP_LOGICO expr
    26     | expr OP_LOGICO expr •
 
-    OP_RELACIONAL  deslocar, e ir ao estado 62
-    MAIS           deslocar, e ir ao estado 65
-    MENOS          deslocar, e ir ao estado 66
-    MULT           deslocar, e ir ao estado 67
-    DIV            deslocar, e ir ao estado 68
-    MOD            deslocar, e ir ao estado 69
+    OP_RELACIONAL  deslocar, e ir ao estado 60
+    MAIS           deslocar, e ir ao estado 63
+    MENOS          deslocar, e ir ao estado 64
+    MULT           deslocar, e ir ao estado 65
+    DIV            deslocar, e ir ao estado 66
+    MOD            deslocar, e ir ao estado 67
 
     $padrão  reduzir usando a regra 26 (expr)
 
 
-Estado 82
+Estado 78
 
    38 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando • ELSE comando
    39        | IF ABRE_PARENTESES expr FECHA_PARENTESES comando •
 
-    ELSE  deslocar, e ir ao estado 95
+    ELSE  deslocar, e ir ao estado 91
 
     $padrão  reduzir usando a regra 39 (if_stmt)
 
 
-Estado 83
+Estado 79
 
    20 expr: expr • MAIS expr
    20     | expr MAIS expr •
@@ -1126,14 +1090,14 @@ Estado 83
    25     | expr • OP_RELACIONAL expr
    26     | expr • OP_LOGICO expr
 
-    MULT  deslocar, e ir ao estado 67
-    DIV   deslocar, e ir ao estado 68
-    MOD   deslocar, e ir ao estado 69
+    MULT  deslocar, e ir ao estado 65
+    DIV   deslocar, e ir ao estado 66
+    MOD   deslocar, e ir ao estado 67
 
     $padrão  reduzir usando a regra 20 (expr)
 
 
-Estado 84
+Estado 80
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -1144,14 +1108,14 @@ Estado 84
    25     | expr • OP_RELACIONAL expr
    26     | expr • OP_LOGICO expr
 
-    MULT  deslocar, e ir ao estado 67
-    DIV   deslocar, e ir ao estado 68
-    MOD   deslocar, e ir ao estado 69
+    MULT  deslocar, e ir ao estado 65
+    DIV   deslocar, e ir ao estado 66
+    MOD   deslocar, e ir ao estado 67
 
     $padrão  reduzir usando a regra 21 (expr)
 
 
-Estado 85
+Estado 81
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -1165,7 +1129,7 @@ Estado 85
     $padrão  reduzir usando a regra 22 (expr)
 
 
-Estado 86
+Estado 82
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -1179,7 +1143,7 @@ Estado 86
     $padrão  reduzir usando a regra 23 (expr)
 
 
-Estado 87
+Estado 83
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -1193,25 +1157,25 @@ Estado 87
     $padrão  reduzir usando a regra 24 (expr)
 
 
-Estado 88
+Estado 84
 
    36 while_stmt: WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando •
 
     $padrão  reduzir usando a regra 36 (while_stmt)
 
 
-Estado 89
+Estado 85
 
-   47 maisExpr: VIRGULA LITERAL • maisExpr
+   45 maisExpr: VIRGULA LITERAL • maisExpr
 
-    VIRGULA  deslocar, e ir ao estado 72
+    VIRGULA  deslocar, e ir ao estado 69
 
-    $padrão  reduzir usando a regra 48 (maisExpr)
+    $padrão  reduzir usando a regra 46 (maisExpr)
 
-    maisExpr  ir ao estado 96
+    maisExpr  ir ao estado 92
 
 
-Estado 90
+Estado 86
 
    20 expr: expr • MAIS expr
    21     | expr • MENOS expr
@@ -1220,51 +1184,51 @@ Estado 90
    24     | expr • MOD expr
    25     | expr • OP_RELACIONAL expr
    26     | expr • OP_LOGICO expr
-   46 maisExpr: VIRGULA expr • maisExpr
+   44 maisExpr: VIRGULA expr • maisExpr
 
-    OP_RELACIONAL  deslocar, e ir ao estado 62
-    OP_LOGICO      deslocar, e ir ao estado 63
-    VIRGULA        deslocar, e ir ao estado 72
-    MAIS           deslocar, e ir ao estado 65
-    MENOS          deslocar, e ir ao estado 66
-    MULT           deslocar, e ir ao estado 67
-    DIV            deslocar, e ir ao estado 68
-    MOD            deslocar, e ir ao estado 69
+    OP_RELACIONAL  deslocar, e ir ao estado 60
+    OP_LOGICO      deslocar, e ir ao estado 61
+    VIRGULA        deslocar, e ir ao estado 69
+    MAIS           deslocar, e ir ao estado 63
+    MENOS          deslocar, e ir ao estado 64
+    MULT           deslocar, e ir ao estado 65
+    DIV            deslocar, e ir ao estado 66
+    MOD            deslocar, e ir ao estado 67
 
-    $padrão  reduzir usando a regra 48 (maisExpr)
+    $padrão  reduzir usando a regra 46 (maisExpr)
 
-    maisExpr  ir ao estado 97
-
-
-Estado 91
-
-   44 print: PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES •
-
-    $padrão  reduzir usando a regra 44 (print)
+    maisExpr  ir ao estado 93
 
 
-Estado 92
+Estado 87
 
-   43 print: PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES •
+   43 print: PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES •
 
     $padrão  reduzir usando a regra 43 (print)
 
 
-Estado 93
+Estado 88
+
+   42 print: PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES •
+
+    $padrão  reduzir usando a regra 42 (print)
+
+
+Estado 89
 
    15 maisDecl: VIRGULA IDENTIFICADOR maisDecl •
 
     $padrão  reduzir usando a regra 15 (maisDecl)
 
 
-Estado 94
+Estado 90
 
    14 maisDecl: VIRGULA atribuicao maisDecl •
 
     $padrão  reduzir usando a regra 14 (maisDecl)
 
 
-Estado 95
+Estado 91
 
    38 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE • comando
 
@@ -1278,7 +1242,7 @@ Estado 95
     IDENTIFICADOR  deslocar, e ir ao estado 11
     ABRE_CHAVES    deslocar, e ir ao estado 12
 
-    comando     ir ao estado 98
+    comando     ir ao estado 94
     declaracao  ir ao estado 14
     tipo        ir ao estado 15
     atribuicao  ir ao estado 16
@@ -1289,21 +1253,21 @@ Estado 95
     print       ir ao estado 21
 
 
-Estado 96
+Estado 92
 
-   47 maisExpr: VIRGULA LITERAL maisExpr •
+   45 maisExpr: VIRGULA LITERAL maisExpr •
 
-    $padrão  reduzir usando a regra 47 (maisExpr)
-
-
-Estado 97
-
-   46 maisExpr: VIRGULA expr maisExpr •
-
-    $padrão  reduzir usando a regra 46 (maisExpr)
+    $padrão  reduzir usando a regra 45 (maisExpr)
 
 
-Estado 98
+Estado 93
+
+   44 maisExpr: VIRGULA expr maisExpr •
+
+    $padrão  reduzir usando a regra 44 (maisExpr)
+
+
+Estado 94
 
    38 if_stmt: IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando •
 
