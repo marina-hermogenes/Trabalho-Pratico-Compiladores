@@ -15,13 +15,27 @@
 
 %token TIPO_INT TIPO_BOOL IF ELSE WHILE PRINT READ TRUE FALSE
 %token IDENTIFICADOR NUM_INTEIRO NUM_INTEIRO_NEGATIVO
-%token OP_ATRIBUICAO OP_RELACIONAL OP_ARITMETICO OP_LOGICO NOT
+%token OP_ATRIBUICAO OP_RELACIONAL OP_LOGICO NOT
 %token ABRE_PARENTESES FECHA_PARENTESES ABRE_CHAVES FECHA_CHAVES
 %token PONTO_E_VIRGULA VIRGULA
 %token LITERAL
+%token MAIS MENOS MULT DIV MOD
 
 
-/* Precedencia para resolver o "dangling else". Perguntar ao professor sobre possivel mudança depois. */
+
+/* ======== Diretivas de precedência ======== */
+/* Ordem: da menor para a maior precedência */
+
+%left OP_LOGICO            
+%left OP_RELACIONAL         
+%left MAIS MENOS               
+%left MULT DIV MOD           
+%right NOT            
+%right UMINUS      
+%right OP_ATRIBUICAO        
+
+/* ======== Precedência especial para o dangling else ======== */
+
 %nonassoc IF_SEM_ELSE 
 %nonassoc ELSE  
 
@@ -74,11 +88,23 @@ atribuicao
 
 //////////////////////////////////////// ALTERAR ISSO AQUI //////////////////////////////////
 
-expr
-    : IDENTIFICADOR
+expr:
+      expr MAIS expr
+    | expr MENOS expr
+    | expr MULT expr
+    | expr DIV expr
+    | expr MOD expr
+    | expr OP_RELACIONAL expr
+    | expr OP_LOGICO expr
+    | NOT expr
+    | MENOS expr %prec UMINUS
+    | ABRE_PARENTESES expr FECHA_PARENTESES
+    | IDENTIFICADOR
     | NUM_INTEIRO
     | NUM_INTEIRO_NEGATIVO
-    ;
+    | TRUE
+    | FALSE
+;
 
 
 ////////////////////////////////////////
@@ -156,4 +182,3 @@ int main(void) {
     imprimirTabela();
     return 0;
 }
-
