@@ -62,12 +62,8 @@ comando
 
 
 declaracao
-    : tipo declaracoes
-    ;
-
-declaracoes
-    : atribuicao maisDecl
-    | IDENTIFICADOR maisDecl
+    : tipo atribuicao maisDecl
+    | tipo IDENTIFICADOR maisDecl
     ;
 
 maisDecl
@@ -172,7 +168,11 @@ void yyerror(const char *s) {
     int coluna_erro = coluna - strlen(yytext); 
     if (coluna_erro < 1) coluna_erro = 1;
 
-    fprintf(stderr, "Erro sintático na linha %d, coluna %d, próximo a '%s': %s\n", linha, coluna_erro, yytext, s);
+    if (yychar == YYEOF) {
+        fprintf(stderr, "Erro sintático no final do arquivo.\n");
+    } else {
+        fprintf(stderr, "Erro sintático na linha %d, coluna %d, próximo a '%s': %s\n", linha, coluna_erro, yytext, s);
+    }
 }
 
 int main(void) {
