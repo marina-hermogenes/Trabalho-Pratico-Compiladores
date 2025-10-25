@@ -42,7 +42,6 @@ digito      [0-9]
 id          {letra}({letra}|{digito})*
 num_int     {digito}+
 relop       (">"|">="|"<"|"<="|"=="|"!=")
-op_arit     ("+"|"-"|"*"|"/"|"%")
 op_log      ("&&"|"||")
 literal     (\"([^\\\"]|\\.)*\"|\'([^\\\']|\\.)\')
 ws          [ \t]
@@ -100,7 +99,13 @@ other       .
 \}                      { setUltimo("FECHA_CHAVES", yytext); /*printf("Linha: %d, Coluna: %d -> %s (FECHA_CHAVES)\n", linha, coluna, yytext);*/ coluna += yyleng; return FECHA_CHAVES;}
 
 {relop}                 { setUltimo("OP_RELACIONAL", yytext); /*printf("Linha: %d, Coluna: %d -> %s (OP_RELACIONAL)\n", linha, coluna, yytext);*/ coluna += yyleng; return OP_RELACIONAL;}
-{op_arit}               { setUltimo("OP_ARITMETICO", yytext); /*printf("Linha: %d, Coluna: %d -> %s (OP_ARITMETICO)\n", linha, coluna, yytext);*/ coluna += yyleng; return OP_ARITMETICO;}
+
+"+"                     { setUltimo("MAIS", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MAIS)\n", linha, coluna, yytext);*/ coluna += yyleng; return MAIS;}    
+"-"                     { setUltimo("MENOS", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MENOS)\n", linha, coluna, yytext);*/ coluna += yyleng; return MENOS;}
+"*"                     { setUltimo("MULT", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MULT)\n", linha, coluna, yytext);*/ coluna += yyleng; return MULT;}
+"/"                     { setUltimo("DIV", yytext); /*printf("Linha: %d, Coluna: %d -> %s (DIV)\n", linha, coluna, yytext);*/ coluna += yyleng; return DIV;}
+"%"                     { setUltimo("MOD", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MOD)\n", linha, coluna, yytext);*/ coluna += yyleng; return MOD;}
+
 {op_log}                { setUltimo("OP_LOGICO", yytext); /*printf("Linha: %d, Coluna: %d -> %s (OP_LOGICO)\n", linha, coluna, yytext);*/ coluna += yyleng; return OP_LOGICO;}
 !                       { setUltimo("NOT", yytext); /*printf("Linha: %d, Coluna: %d -> %s (NOT)\n", linha, coluna, yytext);*/ coluna += yyleng; return NOT;}
 "="                     { setUltimo("OP_ATRIBUICAO", yytext); /*printf("Linha: %d, Coluna: %d -> %s (OP_ATRIBUICAO)\n", linha, coluna, yytext);*/ coluna += yyleng; return OP_ATRIBUICAO;}
@@ -250,4 +255,4 @@ void liberarTabela() {
         atual = prox;
     }
     tabela = NULL;
-}
+}   
