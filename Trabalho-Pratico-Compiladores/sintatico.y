@@ -88,7 +88,7 @@ tipo
     | TIPO_BOOL
     ;
 
-// atribuição de uma expressão a um identificador
+// atribuição de uma expressão a um ou mais identificadores
 atribuicao
     : IDENTIFICADOR OP_ATRIBUICAO expr
     | IDENTIFICADOR OP_ATRIBUICAO atribuicao
