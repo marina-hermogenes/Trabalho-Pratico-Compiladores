@@ -29,13 +29,13 @@
 /* ======== Diretivas de precedência ======== */
 /* Ordem: da menor para a maior precedência */
 
+%right OP_ATRIBUICAO 
 %left OP_LOGICO            
 %left OP_RELACIONAL         
 %left MAIS MENOS               
 %left MULT DIV MOD           
 %right NOT            
-%right UMINUS      
-%right OP_ATRIBUICAO        
+%right UMINUS             
 
 /* ======== Precedência especial para o dangling else ======== */
 
@@ -66,7 +66,7 @@ comando
     | read PONTO_E_VIRGULA
     | if_stmt
     | while_stmt
-    | error PONTO_E_VIRGULA {fprintf(stderr, "Comando inválido na linha %d. Sincronizando com ';'.\n", linha); yyerrok;} // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
+    | error PONTO_E_VIRGULA {fprintf(stderr, "Sincronizando com ';'.\n"); yyerrok;} // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
     ;
 
 // declaração de variáveis
@@ -90,8 +90,7 @@ tipo
 
 // atribuição de uma expressão a um ou mais identificadores
 atribuicao
-    : IDENTIFICADOR OP_ATRIBUICAO expr
-    | IDENTIFICADOR OP_ATRIBUICAO atribuicao
+    : IDENTIFICADOR OP_ATRIBUICAO expr 
     ;
 
 // expressões aritméticas, relacionais e lógicas
@@ -111,6 +110,7 @@ expr:
     | NUM_INTEIRO_NEGATIVO
     | TRUE
     | FALSE
+    | atribuicao
 ;
 
 // comandos entre chaves
@@ -139,7 +139,7 @@ if_stmt
         if (coluna_erro < 1) coluna_erro = 1;
         fprintf(stderr, "Erro na formatação do IF. Sincronizando com ';'.\n");
         yyerrok;
-      }
+      } 
     ;
 
 // leitura em um identificador
