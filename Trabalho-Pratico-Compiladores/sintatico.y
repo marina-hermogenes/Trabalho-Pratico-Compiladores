@@ -91,6 +91,7 @@ tipo
 // atribuição de uma expressão a um identificador
 atribuicao
     : IDENTIFICADOR OP_ATRIBUICAO expr
+    | IDENTIFICADOR OP_ATRIBUICAO atribuicao
     ;
 
 // expressões aritméticas, relacionais e lógicas

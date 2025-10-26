@@ -1,7 +1,7 @@
 /* ---------- CASOS VÁLIDOS ---------- */
 int x = 10;
 bool flag = true, toggled = false;
-int y;
+int y, t = x = 9, h;
 y = x + 5 * (2 + -3);
 a = -42;
 
