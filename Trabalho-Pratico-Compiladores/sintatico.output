@@ -282,7 +282,7 @@ Estado 14
 
     4 comando: declaracao • PONTO_E_VIRGULA
 
-    PONTO_E_VIRGULA  deslocar, e ir ao estado 31
+    PONTO_E_VIRGULA  deslocar, e ir ao estado 31    
 
 
 Estado 15
