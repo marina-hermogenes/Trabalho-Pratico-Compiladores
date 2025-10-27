@@ -73,43 +73,43 @@ other       .
 "-"0                    {
                             reportarErro("-0", linha, coluna, yytext, ultimo_token, ultimo_lexema, erros); coluna += yyleng; erros++;
                             printf("    -0 não é aceitável. \n");
-                        }
+                        } // Tratamento do erro -0
 
-"int"                   { setUltimo("TIPO_INT", yytext); /*printf("Linha: %d, Coluna: %d -> %s (TIPO_INT)\n", linha, coluna, yytext);*/ coluna += yyleng; return TIPO_INT;}
-"bool"                  { setUltimo("TIPO_BOOL", yytext); /*printf("Linha: %d, Coluna: %d -> %s (TIPO_BOOL)\n", linha, coluna, yytext);*/ coluna += yyleng; return TIPO_BOOL;}
+"int"                   { setUltimo("TIPO_INT", yytext); coluna += yyleng; return TIPO_INT;}
+"bool"                  { setUltimo("TIPO_BOOL", yytext); coluna += yyleng; return TIPO_BOOL;}
 
-"if"                    { setUltimo("IF", yytext); /*printf("Linha: %d, Coluna: %d -> %s (IF)\n", linha, coluna, yytext);*/ coluna += yyleng; return IF;}
-"else"                  { setUltimo("ELSE", yytext); /*printf("Linha: %d, Coluna: %d -> %s (ELSE)\n", linha, coluna, yytext);*/ coluna += yyleng; return ELSE;}
-"while"                 { setUltimo("WHILE", yytext); /*printf("Linha: %d, Coluna: %d -> %s (WHILE)\n", linha, coluna, yytext);*/ coluna += yyleng; return WHILE;}
-"print"                 { setUltimo("PRINT", yytext); /*printf("Linha: %d, Coluna: %d -> %s (PRINT)\n", linha, coluna, yytext);*/ coluna += yyleng; return PRINT;}
-"read"                  { setUltimo("READ", yytext); /*printf("Linha: %d, Coluna: %d -> %s (READ)\n", linha, coluna, yytext);*/ coluna += yyleng; return READ;}
-"true"                  { setUltimo("TRUE", yytext); /*printf("Linha: %d, Coluna: %d -> %s (TRUE)\n", linha, coluna, yytext);*/ coluna += yyleng; return TRUE;}
-"false"                 { setUltimo("FALSE", yytext); /*printf("Linha: %d, Coluna: %d -> %s (FALSE)\n", linha, coluna, yytext);*/ coluna += yyleng; return FALSE;}
+"if"                    { setUltimo("IF", yytext); coluna += yyleng; return IF;}
+"else"                  { setUltimo("ELSE", yytext); coluna += yyleng; return ELSE;}
+"while"                 { setUltimo("WHILE", yytext); coluna += yyleng; return WHILE;}
+"print"                 { setUltimo("PRINT", yytext); coluna += yyleng; return PRINT;}
+"read"                  { setUltimo("READ", yytext); coluna += yyleng; return READ;}
+"true"                  { setUltimo("TRUE", yytext); coluna += yyleng; return TRUE;}
+"false"                 { setUltimo("FALSE", yytext); coluna += yyleng; return FALSE;}
 
-{id}                    { setUltimo("IDENTIFICADOR", yytext); /*printf("Linha: %d, Coluna: %d -> %s (IDENTIFICADOR), Índice na tabela de símbolos: %d\n", linha, coluna, yytext, inserirSimbolo(yytext, linha, coluna, "IDENTIFICADOR"));*/  inserirSimbolo(yytext, linha, coluna, "IDENTIFICADOR"); coluna += yyleng; return IDENTIFICADOR; }
+{id}                    { setUltimo("IDENTIFICADOR", yytext); inserirSimbolo(yytext, linha, coluna, "IDENTIFICADOR"); coluna += yyleng; return IDENTIFICADOR; }
 
--{num_int}              { setUltimo("NUM_INTEIRO_NEGATIVO", yytext); /*printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO_NEGATIVO)\n", linha, coluna, yytext);*/ coluna += yyleng; return NUM_INTEIRO_NEGATIVO;}
-{num_int}               { setUltimo("NUM_INTEIRO", yytext); /*printf("Linha: %d, Coluna: %d -> %s (NUM_INTEIRO)\n", linha, coluna, yytext);*/ coluna += yyleng; return NUM_INTEIRO;}
+-{num_int}              { setUltimo("NUM_INTEIRO_NEGATIVO", yytext);  coluna += yyleng; return NUM_INTEIRO_NEGATIVO;}
+{num_int}               { setUltimo("NUM_INTEIRO", yytext); coluna += yyleng; return NUM_INTEIRO;}
 
-;                       { setUltimo("PONTO_E_VIRGULA", yytext); /*printf("Linha: %d, Coluna: %d -> %s (PONTO_E_VIRGULA)\n", linha, coluna, yytext);*/ coluna += yyleng; return PONTO_E_VIRGULA;}
-,                       { setUltimo("VIRGULA", yytext); /*printf("Linha: %d, Coluna: %d -> %s (VIRGULA)\n", linha, coluna, yytext);*/ coluna += yyleng; return VIRGULA;}
-\(                      { setUltimo("ABRE_PARENTESES", yytext); /*printf("Linha: %d, Coluna: %d -> %s (ABRE_PARENTESES)\n", linha, coluna, yytext);*/ coluna += yyleng; return ABRE_PARENTESES;}
-\)                      { setUltimo("FECHA_PARENTESES", yytext); /*printf("Linha: %d, Coluna: %d -> %s (FECHA_PARENTESES)\n", linha, coluna, yytext);*/ coluna += yyleng; return FECHA_PARENTESES;}
-\{                      { setUltimo("ABRE_CHAVES", yytext); /*printf("Linha: %d, Coluna: %d -> %s (ABRE_CHAVES)\n", linha, coluna, yytext);*/ coluna += yyleng; return ABRE_CHAVES;}
-\}                      { setUltimo("FECHA_CHAVES", yytext); /*printf("Linha: %d, Coluna: %d -> %s (FECHA_CHAVES)\n", linha, coluna, yytext);*/ coluna += yyleng; return FECHA_CHAVES;}
+;                       { setUltimo("PONTO_E_VIRGULA", yytext); coluna += yyleng; return PONTO_E_VIRGULA;}
+,                       { setUltimo("VIRGULA", yytext); coluna += yyleng; return VIRGULA;}
+\(                      { setUltimo("ABRE_PARENTESES", yytext); coluna += yyleng; return ABRE_PARENTESES;}
+\)                      { setUltimo("FECHA_PARENTESES", yytext); coluna += yyleng; return FECHA_PARENTESES;}
+\{                      { setUltimo("ABRE_CHAVES", yytext); coluna += yyleng; return ABRE_CHAVES;}
+\}                      { setUltimo("FECHA_CHAVES", yytext); coluna += yyleng; return FECHA_CHAVES;}
 
-{relop}                 { setUltimo("OP_RELACIONAL", yytext); /*printf("Linha: %d, Coluna: %d -> %s (OP_RELACIONAL)\n", linha, coluna, yytext);*/ coluna += yyleng; return OP_RELACIONAL;}
+{relop}                 { setUltimo("OP_RELACIONAL", yytext); coluna += yyleng; return OP_RELACIONAL;}
 
-"+"                     { setUltimo("MAIS", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MAIS)\n", linha, coluna, yytext);*/ coluna += yyleng; return MAIS;}    
-"-"                     { setUltimo("MENOS", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MENOS)\n", linha, coluna, yytext);*/ coluna += yyleng; return MENOS;}
-"*"                     { setUltimo("MULT", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MULT)\n", linha, coluna, yytext);*/ coluna += yyleng; return MULT;}
-"/"                     { setUltimo("DIV", yytext); /*printf("Linha: %d, Coluna: %d -> %s (DIV)\n", linha, coluna, yytext);*/ coluna += yyleng; return DIV;}
-"%"                     { setUltimo("MOD", yytext); /*printf("Linha: %d, Coluna: %d -> %s (MOD)\n", linha, coluna, yytext);*/ coluna += yyleng; return MOD;}
+"+"                     { setUltimo("MAIS", yytext); coluna += yyleng; return MAIS;}    
+"-"                     { setUltimo("MENOS", yytext); coluna += yyleng; return MENOS;}
+"*"                     { setUltimo("MULT", yytext); coluna += yyleng; return MULT;}
+"/"                     { setUltimo("DIV", yytext); coluna += yyleng; return DIV;}
+"%"                     { setUltimo("MOD", yytext); coluna += yyleng; return MOD;}
 
-{op_log}                { setUltimo("OP_LOGICO", yytext); /*printf("Linha: %d, Coluna: %d -> %s (OP_LOGICO)\n", linha, coluna, yytext);*/ coluna += yyleng; return OP_LOGICO;}
-!                       { setUltimo("NOT", yytext); /*printf("Linha: %d, Coluna: %d -> %s (NOT)\n", linha, coluna, yytext);*/ coluna += yyleng; return NOT;}
-"="                     { setUltimo("OP_ATRIBUICAO", yytext); /*printf("Linha: %d, Coluna: %d -> %s (OP_ATRIBUICAO)\n", linha, coluna, yytext);*/ coluna += yyleng; return OP_ATRIBUICAO;}
-{literal}               { setUltimo("LITERAL", yytext); /*printf("Linha: %d, Coluna: %d -> %s (LITERAL)\n", linha, coluna, yytext);*/ coluna += yyleng; return LITERAL;}
+{op_log}                { setUltimo("OP_LOGICO", yytext); coluna += yyleng; return OP_LOGICO;}
+!                       { setUltimo("NOT", yytext); coluna += yyleng; return NOT;}
+"="                     { setUltimo("OP_ATRIBUICAO", yytext); coluna += yyleng; return OP_ATRIBUICAO;}
+{literal}               { setUltimo("LITERAL", yytext); coluna += yyleng; return LITERAL;}
 
 %{ 
 // Erros específicos 
