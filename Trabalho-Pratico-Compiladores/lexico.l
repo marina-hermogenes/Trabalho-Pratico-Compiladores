@@ -75,8 +75,8 @@ other       .
                             printf("    -0 não é aceitável. \n");
                         } // Tratamento do erro -0
 
-"int"                   { setUltimo("TIPO_INT", yytext); coluna += yyleng; return TIPO_INT;}
-"bool"                  { setUltimo("TIPO_BOOL", yytext); coluna += yyleng; return TIPO_BOOL;}
+"int"                   { yylval.lexema = strdup(yytext); setUltimo("TIPO_INT", yytext); coluna += yyleng; return TIPO_INT;}
+"bool"                  { yylval.lexema = strdup(yytext); setUltimo("TIPO_BOOL", yytext); coluna += yyleng; return TIPO_BOOL;}
 
 "if"                    { setUltimo("IF", yytext); coluna += yyleng; return IF;}
 "else"                  { setUltimo("ELSE", yytext); coluna += yyleng; return ELSE;}
@@ -86,10 +86,10 @@ other       .
 "true"                  { setUltimo("TRUE", yytext); coluna += yyleng; return TRUE;}
 "false"                 { setUltimo("FALSE", yytext); coluna += yyleng; return FALSE;}
 
-{id}                    { setUltimo("IDENTIFICADOR", yytext); inserirSimbolo(yytext, linha, coluna, "IDENTIFICADOR"); coluna += yyleng; return IDENTIFICADOR; }
+{id}                    { yylval.lexema = strdup(yytext); setUltimo("IDENTIFICADOR", yytext); inserirSimbolo(yytext, linha, coluna, "IDENTIFICADOR"); coluna += yyleng; return IDENTIFICADOR; }
 
--{num_int}              { setUltimo("NUM_INTEIRO_NEGATIVO", yytext);  coluna += yyleng; return NUM_INTEIRO_NEGATIVO;}
-{num_int}               { setUltimo("NUM_INTEIRO", yytext); coluna += yyleng; return NUM_INTEIRO;}
+-{num_int}              { yylval.lexema = strdup(yytext); setUltimo("NUM_INTEIRO_NEGATIVO", yytext);  coluna += yyleng; return NUM_INTEIRO_NEGATIVO;}
+{num_int}               { yylval.lexema = strdup(yytext); setUltimo("NUM_INTEIRO", yytext); coluna += yyleng; return NUM_INTEIRO;}
 
 ;                       { setUltimo("PONTO_E_VIRGULA", yytext); coluna += yyleng; return PONTO_E_VIRGULA;}
 ,                       { setUltimo("VIRGULA", yytext); coluna += yyleng; return VIRGULA;}
@@ -98,7 +98,7 @@ other       .
 \{                      { setUltimo("ABRE_CHAVES", yytext); coluna += yyleng; return ABRE_CHAVES;}
 \}                      { setUltimo("FECHA_CHAVES", yytext); coluna += yyleng; return FECHA_CHAVES;}
 
-{relop}                 { setUltimo("OP_RELACIONAL", yytext); coluna += yyleng; return OP_RELACIONAL;}
+{relop}                 { yylval.lexema = strdup(yytext); setUltimo("OP_RELACIONAL", yytext); coluna += yyleng; return OP_RELACIONAL;}
 
 "+"                     { setUltimo("MAIS", yytext); coluna += yyleng; return MAIS;}    
 "-"                     { setUltimo("MENOS", yytext); coluna += yyleng; return MENOS;}
@@ -106,10 +106,10 @@ other       .
 "/"                     { setUltimo("DIV", yytext); coluna += yyleng; return DIV;}
 "%"                     { setUltimo("MOD", yytext); coluna += yyleng; return MOD;}
 
-{op_log}                { setUltimo("OP_LOGICO", yytext); coluna += yyleng; return OP_LOGICO;}
+{op_log}                { yylval.lexema = strdup(yytext); setUltimo("OP_LOGICO", yytext); coluna += yyleng; return OP_LOGICO;}
 !                       { setUltimo("NOT", yytext); coluna += yyleng; return NOT;}
-"="                     { setUltimo("OP_ATRIBUICAO", yytext); coluna += yyleng; return OP_ATRIBUICAO;}
-{literal}               { setUltimo("LITERAL", yytext); coluna += yyleng; return LITERAL;}
+"="                     { yylval.lexema = strdup(yytext); setUltimo("OP_ATRIBUICAO", yytext); coluna += yyleng; return OP_ATRIBUICAO;}
+{literal}               { yylval.lexema = strdup(yytext); setUltimo("LITERAL", yytext); coluna += yyleng; return LITERAL;}
 
 %{ 
 // Erros específicos 
