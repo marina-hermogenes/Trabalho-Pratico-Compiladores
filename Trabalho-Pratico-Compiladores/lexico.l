@@ -81,8 +81,8 @@ other       .
 "if"                    { setUltimo("IF", yytext); coluna += yyleng; return IF;}
 "else"                  { setUltimo("ELSE", yytext); coluna += yyleng; return ELSE;}
 "while"                 { setUltimo("WHILE", yytext); coluna += yyleng; return WHILE;}
-"print"                 { setUltimo("PRINT", yytext); coluna += yyleng; return PRINT;}
-"read"                  { setUltimo("READ", yytext); coluna += yyleng; return READ;}
+"print"                 { yylval.lexema = strdup(yytext); setUltimo("PRINT", yytext); coluna += yyleng; return PRINT;}
+"read"                  { yylval.lexema = strdup(yytext); setUltimo("READ", yytext); coluna += yyleng; return READ;}
 "true"                  { setUltimo("TRUE", yytext); coluna += yyleng; return TRUE;}
 "false"                 { setUltimo("FALSE", yytext); coluna += yyleng; return FALSE;}
 

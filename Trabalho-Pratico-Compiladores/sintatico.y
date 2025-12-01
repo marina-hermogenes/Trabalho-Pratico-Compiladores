@@ -34,7 +34,7 @@
 }
 
 /* ======== Declaração dos tokens ======== */
-%token TIPO_INT TIPO_BOOL IF ELSE WHILE PRINT READ TRUE FALSE
+%token TIPO_INT TIPO_BOOL IF ELSE WHILE TRUE FALSE
 %token OP_ATRIBUICAO NOT
 %token ABRE_PARENTESES FECHA_PARENTESES ABRE_CHAVES FECHA_CHAVES
 %token PONTO_E_VIRGULA VIRGULA
@@ -42,7 +42,8 @@
 
 %token <lexema> IDENTIFICADOR NUM_INTEIRO NUM_INTEIRO_NEGATIVO LITERAL
 %token <lexema> OP_RELACIONAL OP_LOGICO
-%type <lexema> expr atribuicao
+%token <lexema> PRINT READ
+%type <lexema> expr atribuicao maisExpr itemPrint
 
 /* ======== Diretivas de precedência ======== */
 /* Ordem: da menor para a maior precedência */
@@ -251,20 +252,65 @@ if_stmt
 
 // leitura em um identificador
 read
-    : READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES
+    : READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES {
+            char code[200];
+            sprintf(code, "read %s", $3);
+            c3e_gen(code);
+        }
     ;
 
 // print de um ou mais literais ou expressões
 print
-    : PRINT ABRE_PARENTESES expr maisExpr FECHA_PARENTESES
-    | PRINT ABRE_PARENTESES LITERAL maisExpr FECHA_PARENTESES
+    : PRINT ABRE_PARENTESES itemPrint FECHA_PARENTESES {
+            char *lista = strdup($3);
+            char *p = strtok(lista, ",");
+
+            while (p != NULL) {
+                // tira espaços
+                while (*p == ' ') p++;
+
+                char code[200];
+                sprintf(code, "print %s", p);
+                c3e_gen(code);
+
+                p = strtok(NULL, ",");
+            }
+
+            free(lista);
+      }
     ;
+
+itemPrint
+    : expr maisExpr {
+            int size = strlen($1) + strlen($2 ? $2 : "") + 5;
+            char *s = malloc(size);
+            sprintf(s, "%s%s", $1, $2 ? $2 : "");
+            $$ = s;
+        }
+    | LITERAL maisExpr {
+            int size = strlen($1) + strlen($2 ? $2 : "") + 5;
+            char *s = malloc(size);
+            sprintf(s, "%s%s", $1, $2 ? $2 : "");
+            $$ = s;
+        }
 
 // sequência de expressões e literais separados por vírgula
 maisExpr
-    : VIRGULA expr maisExpr
-    | VIRGULA LITERAL maisExpr
-    |
+    : VIRGULA expr maisExpr {
+            int size = strlen($2) + strlen($3 ? $3 : "") + 5;
+            char *s = malloc(size);
+            sprintf(s, ", %s%s", $2, $3 ? $3 : "");
+            $$ = s;
+        }
+    | VIRGULA LITERAL maisExpr {
+            int size = strlen($2) + strlen($3 ? $3 : "") + 5;
+            char *s = malloc(size);
+            sprintf(s, ", %s%s", $2, $3 ? $3 : "");
+            $$ = s;
+        }
+    | {
+            $$ = strdup("");
+        }
     ;
 
 %%
