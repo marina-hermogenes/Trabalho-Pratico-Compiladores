@@ -30,7 +30,7 @@
 
     void c3e_gen(const char* instr) {
         FILE *f = fopen("c3e.txt", "a");
-        fprintf(f, "%s\n", instr);
+        fprintf(f, "%s", instr);
         fclose(f);
     }
 %}
@@ -168,7 +168,7 @@ atribuicao
         int size = strlen($3.code) + strlen($1) + strlen($3.temp) + 20;
         char* code = malloc(size);
 
-        sprintf(code, "%s\n%s = %s\n", $3.code, $1, $3.temp);
+        sprintf(code, "%s%s = %s\n", $3.code, $1, $3.temp);
 
         $$.code = code;
         $$.temp = strdup($1);
@@ -290,40 +290,40 @@ bloco
 while_stmt
     : WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando {
         char *Linicio = newLabel();
-        char *Lcodigo = newLabel();
-        char *Lfim = newLabel();
 
         // Linicio
         int size1 = strlen(Linicio) + 5;
         char* code1 = malloc(size1);
-        sprintf(code1, "%s:", Linicio);
+        sprintf(code1, "\n%s:\n", Linicio);
 
         // Quando a condição é verdadeira
+        char *Lcodigo = newLabel();
         int size2 = strlen($3.code) + strlen($3.temp) + strlen(Lcodigo) + 20;
         char* code2 = malloc(size2);
-        sprintf(code2, "%sif %s goto %s", $3.code, $3.temp, Lcodigo);
-
-        // Quando a condição é falsa
-        int size3 = strlen(Lfim) + 20;
-        char* code3 = malloc(size3);
-        sprintf(code3, "goto %s", Lfim);
+        sprintf(code2, "%sif %s goto %s\n", $3.code, $3.temp, Lcodigo);
 
         // Código para a condição verdadeira é gerado
-        int size4 = strlen(Lcodigo) + 20;
+        int size3 = strlen(Lcodigo) + 20;
+        char* code3 = malloc(size3);
+        sprintf(code3, "\n%s:\n", Lcodigo);
+        int size4 = strlen(Linicio) + 20;
         char* code4 = malloc(size4);
-        sprintf(code4, "%s:", Lcodigo);
-        int size5 = strlen(Linicio) + 20;
-        char* code5 = malloc(size5);
-        sprintf(code5, "goto %s", Linicio);
+        sprintf(code4, "goto %s\n", Linicio);
 
         // Label para a condição falsa
+        char *Lfim = newLabel();
         int size6 = strlen(Lfim) + 20;
         char* code6 = malloc(size6);
-        sprintf(code6, "%s:", Lfim);
+        sprintf(code6, "\n%s:\n", Lfim);
 
-        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen(code4) + strlen($5) + strlen(code5) + strlen(code6) + 100;
+        // Quando a condição é falsa
+        int size7 = strlen(Lfim) + 20;
+        char* code7 = malloc(size3);
+        sprintf(code7, "goto %s\n", Lfim);
+
+        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen(code4) + strlen($5) + strlen(code6) + strlen(code7) + 100;
         char* code = malloc(size);
-        sprintf(code, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n", code1, code2, code3, code4, $5, code5, code6);
+        sprintf(code, "%s%s%s%s%s%s%s", code1, code2, code7, code3, $5, code4, code6);
         $$ = code;
 
     }
@@ -339,10 +339,82 @@ while_stmt
 // estrutura condicional if (com e sem else)
 if_stmt
     : IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando {
-        $$ = strdup("");
+        char *Linicio = newLabel();
+        char *Lcodigo = newLabel();
+
+        // Condição 
+        int size1 = strlen($3.temp) + strlen($3.code) + strlen(Lcodigo) + 20;
+        char* code1 = malloc(size1);
+        sprintf(code1, "%sIF %s goto %s\n", $3.code, $3.temp, Lcodigo);
+
+        // Código da condição verdadeira
+        int size3 = strlen(Lcodigo) + 20;
+        char* code3 = malloc(size3);
+        sprintf(code3, "\n%s:\n", Lcodigo);
+
+        // Código da condição falsa
+        char *Lfalso = newLabel();
+        int size5 = strlen(Lfalso) + 5;
+        char* code5 = malloc(size5);
+        sprintf(code5, "\n%s:\n", Lfalso);
+
+        // Condição falsa
+        int size2 = strlen(Lfalso) + 20;
+        char* code2 = malloc(size2);
+        sprintf(code2, "goto %s\n", Lfalso);
+
+        // Fim do if/else
+        char *Lfim = newLabel();
+        int size7 = strlen(Lfim) + 20;
+        char* code7 = malloc(size7);
+        sprintf(code7, "\n%s:\n", Lfim);
+
+        int size6 = strlen(Lfim) + 10;
+        char* code6 = malloc(size6);
+        sprintf(code6, "goto %s\n", Lfim);
+
+        int size4 = strlen(Lfim) + 10;
+        char* code4 = malloc(size4);
+        sprintf(code4, "goto %s\n", Lfim);
+
+        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5) + strlen(code4) + strlen($7) + strlen(code5) + strlen(code6) + strlen(code7) + 100;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s%s%s%s%s%s%s", code1, code2, code3, $5, code4, code5, $7, code6, code7);
+        $$ = code;
     }
     | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE {
-        $$ = strdup("");
+        char *Linicio = newLabel();
+        char *Lcodigo = newLabel();
+
+        // Condição 
+        int size1 = strlen($3.temp) + strlen($3.code) + strlen(Lcodigo) + 20;
+        char* code1 = malloc(size1);
+        sprintf(code1, "%sIF %s goto %s\n", $3.code, $3.temp, Lcodigo);
+
+        // Código da condição verdadeira
+        int size3 = strlen(Lcodigo) + 20;
+        char* code3 = malloc(size3);
+        sprintf(code3, "\n%s:\n", Lcodigo);
+
+        // Fim do if
+        char *Lfim = newLabel();
+        int size5 = strlen(Lfim) + 20;
+        char* code5 = malloc(size5);
+        sprintf(code5, "\n%s:\n", Lfim);
+
+        // Condição falsa
+        int size2 = strlen(Lfim) + 20;
+        char* code2 = malloc(size2);
+        sprintf(code2, "goto %s\n", Lfim);
+
+        int size4 = strlen(Lfim) + 10;
+        char* code4 = malloc(size4);
+        sprintf(code4, "goto %s\n", Lfim);
+
+        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5) + strlen(code4) + strlen(code5) + 100;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s%s%s%s", code1, code2, code3, $5, code4, code5);
+        $$ = code;
     }
     | IF error PONTO_E_VIRGULA {  // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         int coluna_erro = coluna - strlen(yytext); 
