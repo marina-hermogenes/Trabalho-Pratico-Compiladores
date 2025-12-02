@@ -16,9 +16,15 @@
 
     char tbuffer[50];
     int tempCount = 0;
+    int labelCount = 0;
 
     char* new_nomeTemporaria() {
         sprintf(tbuffer, "t%d", tempCount++);
+        return strdup(tbuffer);
+    }
+
+    char* newLabel() {
+        sprintf(tbuffer, "L%d", labelCount++);
         return strdup(tbuffer);
     }
 
@@ -31,19 +37,25 @@
 
 %union {
     char* lexema;
+    struct {
+        char* code;
+        char* temp;
+    } expressao;
 }
 
 /* ======== Declaração dos tokens ======== */
-%token TIPO_INT TIPO_BOOL IF ELSE WHILE TRUE FALSE
+%token TIPO_INT TIPO_BOOL IF ELSE WHILE
 %token OP_ATRIBUICAO NOT
 %token ABRE_PARENTESES FECHA_PARENTESES ABRE_CHAVES FECHA_CHAVES
 %token PONTO_E_VIRGULA VIRGULA
 %token MAIS MENOS MULT DIV MOD
 
-%token <lexema> IDENTIFICADOR NUM_INTEIRO NUM_INTEIRO_NEGATIVO LITERAL
+%token <lexema> IDENTIFICADOR NUM_INTEIRO NUM_INTEIRO_NEGATIVO LITERAL TRUE FALSE
 %token <lexema> OP_RELACIONAL OP_LOGICO
 %token <lexema> PRINT READ
-%type <lexema> expr atribuicao maisExpr itemPrint
+%type <lexema> itemPrint comando comandos while_stmt bloco declaracao print read maisDecl maisExpr
+%type <lexema> if_stmt
+%type <expressao> expr atribuicao
 
 /* ======== Diretivas de precedência ======== */
 /* Ordem: da menor para a maior precedência */
@@ -67,46 +79,81 @@
 
 // símbolo inicial
 programa 
-    : comandos 
+    : comandos {
+        c3e_gen($1);
+    }
     ;
 
 // sequência de comandos
 comandos
-    : comandos comando
-    |
+    : comandos comando {
+        int size = strlen($1) + strlen($2) + 5;
+        char *s = malloc(size);
+        sprintf(s, "%s%s", $1, $2);
+        $$ = s;
+    }
+    | {
+        $$ = strdup("");
+    }
     ;
 
 // tipos de comandos que a linguagem suporta
 comando
-    : declaracao PONTO_E_VIRGULA
-    | atribuicao PONTO_E_VIRGULA
-    | bloco
-    | print PONTO_E_VIRGULA
-    | read PONTO_E_VIRGULA
-    | if_stmt
-    | while_stmt
+    : declaracao PONTO_E_VIRGULA {
+        $$ = $1;
+    }
+    | atribuicao PONTO_E_VIRGULA {
+        $$ = $1.code;
+    }
+    | bloco {
+        $$ = $1;
+    }
+    | print PONTO_E_VIRGULA {
+        $$ = $1;
+    }
+    | read PONTO_E_VIRGULA {
+        $$ = $1;
+    }
+    | if_stmt 
+    | while_stmt {
+        $$ = $1;
+    }
     | error PONTO_E_VIRGULA {fprintf(stderr, "Sincronizando com ';'.\n"); yyerrok;} // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
     ;
 
 // declaração de variáveis
 declaracao
-    : tipo atribuicao maisDecl
+    : tipo atribuicao maisDecl {
+        int size = strlen($2.code) + strlen($3) + 5;
+        char *s = malloc(size);
+        sprintf(s, "%s%s", $2.code, $3);
+        $$ = s;
+    }
     | tipo IDENTIFICADOR maisDecl {
-            char code[100];
-            sprintf(code, "%s = 0", $2);
-            c3e_gen(code);
+        int size = strlen($2) + strlen($3) + 10;
+        char *s = malloc(size);
+        sprintf(s, "%s = 0%s", $2, $3);
+        $$ = s;
       }
     ;
 
 // sequência de declarações, separadas por vírgula
 maisDecl
-    : VIRGULA atribuicao maisDecl
+    : VIRGULA atribuicao maisDecl {
+        int size = strlen($2.code) + strlen($3) + 10;
+        char *s = malloc(size);
+        sprintf(s, "%s%s", $2.code, $3);
+        $$ = s;
+    }
     | VIRGULA IDENTIFICADOR maisDecl {
-            char code[100];
-            sprintf(code, "%s = 0", $2);
-            c3e_gen(code);
-      }
-    |
+        int size = strlen($2) + strlen($3) + 10;
+        char *s = malloc(size);
+        sprintf(s, "%s = 0%s", $2, $3);
+        $$ = s;
+    }
+    | {
+        $$ = strdup("");
+    }
     ;
 
 // tipos de variáveis suportadas
@@ -118,117 +165,168 @@ tipo
 // atribuição de uma expressão a um ou mais identificadores
 atribuicao
     : IDENTIFICADOR OP_ATRIBUICAO expr {
-          char code[200];
-          sprintf(code, "%s = %s", $1, $3);
-          c3e_gen(code);
-          $$ = strdup($1);   // o valor de uma atribuição é o próprio identificador
+        int size = strlen($3.code) + strlen($1) + strlen($3.temp) + 20;
+        char* code = malloc(size);
+
+        sprintf(code, "%s\n%s = %s\n", $3.code, $1, $3.temp);
+
+        $$.code = code;
+        $$.temp = strdup($1);
     }
     ;
 
 // expressões aritméticas, relacionais e lógicas
 expr:
       expr MAIS expr {
-            char* t = new_nomeTemporaria();
-            char code[100];
-            sprintf(code, "%s = %s + %s", t, $1, $3);
-            c3e_gen(code);
-            $$ = strdup(t);
-      }
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s + %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+    }
     | expr MENOS expr {
-            char* t = new_nomeTemporaria();
-            char code[100];
-            sprintf(code, "%s = %s - %s", t, $1, $3);
-            c3e_gen(code);
-            $$ = strdup(t);
-      }
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s - %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+    }
     | expr MULT expr {
-            char* t = new_nomeTemporaria();
-            char code[100];
-            sprintf(code, "%s = %s * %s", t, $1, $3);
-            c3e_gen(code);
-            $$ = strdup(t);
-      }
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s * %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+    }
     | expr DIV expr {
-            char* t = new_nomeTemporaria();
-            char code[100];
-            sprintf(code, "%s = %s / %s", t, $1, $3);
-            c3e_gen(code);
-            $$ = strdup(t);
-      }
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s / %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+    }
     | expr MOD expr {
-            char* t = new_nomeTemporaria();
-            char code[100];
-            sprintf(code, "%s = %s %% %s", t, $1, $3);
-            c3e_gen(code);
-            $$ = strdup(t);
-      }
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s %% %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+    }
     | expr OP_RELACIONAL expr {
-            char* t = new_nomeTemporaria();
-            char code[100];
-            sprintf(code, "%s = %s %s %s", t, $1, $2, $3);
-            c3e_gen(code);
-            $$ = strdup(t);
-      }
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+    }
     | expr OP_LOGICO expr {
-            char* t = new_nomeTemporaria();
-            char code[100];
-            sprintf(code, "%s = %s %s %s", t, $1, $2, $3);
-            c3e_gen(code);
-            $$ = strdup(t);
-      }
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+     }
     | NOT expr {
         char* t = new_nomeTemporaria();
-        char code[100];
-        sprintf(code, "%s = ! %s", t, $2);
-        c3e_gen(code);
-        $$ = strdup(t);
+        int size = strlen($2.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s + NOT %s\n", $2.code, t, $2.temp);
+        $$.code = code;
+        $$.temp = t;
     }
     | MENOS expr %prec UMINUS {
         char* t = new_nomeTemporaria();
-        char code[100];
-        sprintf(code, "%s = - %s", t, $2);
-        c3e_gen(code);
-        $$ = strdup(t);
+        int size = strlen($2.code) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s + MINUS %s\n", $2.code, t, $2.temp);
+        $$.code = code;
+        $$.temp = t;
     }
     | ABRE_PARENTESES expr FECHA_PARENTESES {
-        $$ = $2;
+        $$.code = $2.code;
+        $$.temp = $2.temp;
     }
     | IDENTIFICADOR {
-        $$ = strdup($1);
+        $$.code = strdup("");
+        $$.temp = strdup($1);
     }
     | NUM_INTEIRO {
-        char* t = new_nomeTemporaria();
-        char code[100];
-        sprintf(code, "%s = %s", t, $1);
-        c3e_gen(code);
-        $$ = strdup(t);
+        $$.code = strdup("");
+        $$.temp = strdup($1);
     }
     | NUM_INTEIRO_NEGATIVO {
-        char* t = new_nomeTemporaria();
-        char code[100];
-        sprintf(code, "%s = %s", t, $1);
-        c3e_gen(code);
-        $$ = strdup(t);
+        $$.code = strdup("");
+        $$.temp = strdup($1);
     }
     | TRUE {
-        $$ = strdup("1");
+        $$.code = strdup($1);
+        $$.temp = strdup($1);
     }
     | FALSE {
-        $$ = strdup("0");
+        $$.code = strdup($1);
+        $$.temp = strdup($1);
     }
     | atribuicao {
-        $$ = $1;
+        $$.code = $1.code;
+        $$.temp = $1.temp;
     }
 ;
 
 // comandos entre chaves
 bloco
-    : ABRE_CHAVES comandos FECHA_CHAVES
+    : ABRE_CHAVES comandos FECHA_CHAVES {
+        $$ = $2;
+    }
     ;
 
 // estrutura de repetição while
 while_stmt
-    : WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando
+    : WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando {
+        char *Linicio = newLabel();
+        char *Lcodigo = newLabel();
+        char *Lfim = newLabel();
+
+        // Linicio
+        int size1 = strlen(Linicio) + 5;
+        char* code1 = malloc(size1);
+        sprintf(code1, "%s:", Linicio);
+
+        // Quando a condição é verdadeira
+        int size2 = strlen($3.code) + strlen($3.temp) + strlen(Lcodigo) + 20;
+        char* code2 = malloc(size2);
+        sprintf(code2, "%sif %s goto %s", $3.code, $3.temp, Lcodigo);
+
+        // Quando a condição é falsa
+        int size3 = strlen(Lfim) + 20;
+        char* code3 = malloc(size3);
+        sprintf(code3, "goto %s", Lfim);
+
+        // Código para a condição verdadeira é gerado
+        int size4 = strlen(Lcodigo) + 20;
+        char* code4 = malloc(size4);
+        sprintf(code4, "%s:", Lcodigo);
+        int size5 = strlen(Linicio) + 20;
+        char* code5 = malloc(size5);
+        sprintf(code5, "goto %s", Linicio);
+
+        // Label para a condição falsa
+        int size6 = strlen(Lfim) + 20;
+        char* code6 = malloc(size6);
+        sprintf(code6, "%s:", Lfim);
+
+        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen(code4) + strlen($5) + strlen(code5) + strlen(code6) + 100;
+        char* code = malloc(size);
+        sprintf(code, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n", code1, code2, code3, code4, $5, code5, code6);
+        $$ = code;
+
+    }
 
     | WHILE error PONTO_E_VIRGULA {  // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         int coluna_erro = coluna - strlen(yytext); 
@@ -240,8 +338,12 @@ while_stmt
 
 // estrutura condicional if (com e sem else)
 if_stmt
-    : IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando
-    | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE
+    : IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando {
+        $$ = strdup("");
+    }
+    | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE {
+        $$ = strdup("");
+    }
     | IF error PONTO_E_VIRGULA {  // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         int coluna_erro = coluna - strlen(yytext); 
         if (coluna_erro < 1) coluna_erro = 1;
@@ -253,64 +355,57 @@ if_stmt
 // leitura em um identificador
 read
     : READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES {
-            char code[200];
-            sprintf(code, "read %s", $3);
-            c3e_gen(code);
-        }
+        int size = strlen($1) + strlen($3) + 10;
+        char* code = malloc(size);
+        sprintf(code, "READ %s", $3);
+        $$ = code;
+    }
     ;
 
 // print de um ou mais literais ou expressões
 print
     : PRINT ABRE_PARENTESES itemPrint FECHA_PARENTESES {
-            char *lista = strdup($3);
-            char *p = strtok(lista, ",");
-
-            while (p != NULL) {
-                // tira espaços
-                while (*p == ' ') p++;
-
-                char code[200];
-                sprintf(code, "print %s", p);
-                c3e_gen(code);
-
-                p = strtok(NULL, ",");
-            }
-
-            free(lista);
-      }
+        char *code = malloc(strlen($3) + 1);
+        strcpy(code, $3);
+        $$ = code;
+    }
     ;
 
 itemPrint
     : expr maisExpr {
-            int size = strlen($1) + strlen($2 ? $2 : "") + 5;
-            char *s = malloc(size);
-            sprintf(s, "%s%s", $1, $2 ? $2 : "");
-            $$ = s;
-        }
+        int size = strlen($1.temp) + strlen($2) + 20;
+        char *s = malloc(size);
+
+        sprintf(s, "%sPRINT %s\n%s", $1.code, $1.temp, $2);
+        $$ = s;
+    }
     | LITERAL maisExpr {
-            int size = strlen($1) + strlen($2 ? $2 : "") + 5;
-            char *s = malloc(size);
-            sprintf(s, "%s%s", $1, $2 ? $2 : "");
-            $$ = s;
-        }
+        int size = strlen($1) + strlen($2) + 20;
+        char *s = malloc(size);
+
+        sprintf(s, "PRINT %s\n%s", $1, $2);
+        $$ = s;
+    }
 
 // sequência de expressões e literais separados por vírgula
 maisExpr
     : VIRGULA expr maisExpr {
-            int size = strlen($2) + strlen($3 ? $3 : "") + 5;
-            char *s = malloc(size);
-            sprintf(s, ", %s%s", $2, $3 ? $3 : "");
-            $$ = s;
-        }
+        int size = strlen($2.temp) + strlen($2.temp) + strlen($3) + 50;
+        char *s = malloc(size);
+
+        sprintf(s, "%sPRINT %s\n%s", $2.code, $2.temp, $3);
+        $$ = s;
+    }
     | VIRGULA LITERAL maisExpr {
-            int size = strlen($2) + strlen($3 ? $3 : "") + 5;
-            char *s = malloc(size);
-            sprintf(s, ", %s%s", $2, $3 ? $3 : "");
-            $$ = s;
-        }
+        int size = strlen($2) + strlen($3) + 20;
+        char *s = malloc(size);
+
+        sprintf(s, "PRINT %s\n%s", $2, $3);
+        $$ = s;
+    }
     | {
-            $$ = strdup("");
-        }
+        $$ = strdup("");
+    }
     ;
 
 %%
