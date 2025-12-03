@@ -14,7 +14,6 @@
     int yylex(void);
     void yyerror(const char *s);
 
-    /* --- PARTE PESSOA C (GERADOR) --- */
     char tbuffer[50];
     int tempCount = 0;
     int labelCount = 0;
@@ -35,7 +34,7 @@
         fclose(f);
     }
 
-    /* --- PARTE PESSOA A (TABELA DE SIMBOLOS) --- */
+    /* --- TABELA DE SIMBOLOS --- */
     char *tipoAtual = NULL; /* Flag global para saber se estamos declarando int ou bool */
 
     typedef struct Simbolo {
@@ -565,7 +564,7 @@ int main(void) {
     return 0;
 }
 
-/* ======== FUNÇÕES DA TABELA DE SÍMBOLOS (PESSOA A) ======== */
+/* ======== FUNÇÕES DA TABELA DE SÍMBOLOS ======== */
 void initTabela() {
     escopoAtual = NULL;
     pushEscopo();
