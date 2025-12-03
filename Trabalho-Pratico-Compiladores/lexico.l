@@ -58,40 +58,40 @@ other       .
                             printf("    -0 não é aceitável. \n");
                         } 
 
-"int"                   { yylval.lexema = strdup(yytext); setUltimo("TIPO_INT", yytext); coluna += yyleng; return TIPO_INT;}
-"bool"                  { yylval.lexema = strdup(yytext); setUltimo("TIPO_BOOL", yytext); coluna += yyleng; return TIPO_BOOL;}
+"int"                   { yylval.token.lexema = strdup(yytext); setUltimo("TIPO_INT", yytext); coluna += yyleng; return TIPO_INT;}
+"bool"                  { yylval.token.lexema = strdup(yytext); setUltimo("TIPO_BOOL", yytext); coluna += yyleng; return TIPO_BOOL;}
 
 "if"                    { setUltimo("IF", yytext); coluna += yyleng; return IF;}
 "else"                  { setUltimo("ELSE", yytext); coluna += yyleng; return ELSE;}
 "while"                 { setUltimo("WHILE", yytext); coluna += yyleng; return WHILE;}
-"print"                 { yylval.lexema = strdup(yytext); setUltimo("PRINT", yytext); coluna += yyleng; return PRINT;}
-"read"                  { yylval.lexema = strdup(yytext); setUltimo("READ", yytext); coluna += yyleng; return READ;}
+"print"                 { yylval.token.lexema = strdup(yytext); setUltimo("PRINT", yytext); coluna += yyleng; return PRINT;}
+"read"                  { yylval.token.lexema = strdup(yytext); setUltimo("READ", yytext); coluna += yyleng; return READ;}
 
 "true"                  { 
-                            yylval.lexema = strdup(yytext);
+                            yylval.token.lexema = strdup(yytext);
                             setUltimo("TRUE", yytext); coluna += yyleng; return TRUE;
                         }
 "false"                 { 
-                            yylval.lexema = strdup(yytext);
+                            yylval.token.lexema = strdup(yytext);
                             setUltimo("FALSE", yytext); coluna += yyleng; return FALSE;
                         }
 
 {id}                    { 
-                            yylval.lexema = strdup(yytext); 
+                            yylval.token.lexema = strdup(yytext); 
                             setUltimo("IDENTIFICADOR", yytext); 
                             coluna += yyleng; 
                             return IDENTIFICADOR; 
                         }
 
 -{num_int}              { 
-                            yylval.lexema = strdup(yytext);
+                            yylval.token.lexema = strdup(yytext);
                             setUltimo("NUM_INTEIRO_NEGATIVO", yytext);  
                             coluna += yyleng; 
                             return NUM_INTEIRO_NEGATIVO;
                         }
 
 {num_int}               { 
-                            yylval.lexema = strdup(yytext); 
+                            yylval.token.lexema = strdup(yytext); 
                             setUltimo("NUM_INTEIRO", yytext); 
                             coluna += yyleng; 
                             return NUM_INTEIRO;
@@ -104,7 +104,7 @@ other       .
 \{                      { setUltimo("ABRE_CHAVES", yytext); coluna += yyleng; return ABRE_CHAVES;}
 \}                      { setUltimo("FECHA_CHAVES", yytext); coluna += yyleng; return FECHA_CHAVES;}
 
-{relop}                 { yylval.lexema = strdup(yytext); setUltimo("OP_RELACIONAL", yytext); coluna += yyleng; return OP_RELACIONAL;}
+{relop}                 { yylval.token.lexema = strdup(yytext); setUltimo("OP_RELACIONAL", yytext); coluna += yyleng; return OP_RELACIONAL;}
 
 "+"                     { setUltimo("MAIS", yytext); coluna += yyleng; return MAIS;}    
 "-"                     { setUltimo("MENOS", yytext); coluna += yyleng; return MENOS;}
@@ -112,10 +112,10 @@ other       .
 "/"                     { setUltimo("DIV", yytext); coluna += yyleng; return DIV;}
 "%"                     { setUltimo("MOD", yytext); coluna += yyleng; return MOD;}
 
-{op_log}                { yylval.lexema = strdup(yytext); setUltimo("OP_LOGICO", yytext); coluna += yyleng; return OP_LOGICO;}
+{op_log}                { yylval.token.lexema = strdup(yytext); setUltimo("OP_LOGICO", yytext); coluna += yyleng; return OP_LOGICO;}
 !                       { setUltimo("NOT", yytext); coluna += yyleng; return NOT;}
-"="                     { yylval.lexema = strdup(yytext); setUltimo("OP_ATRIBUICAO", yytext); coluna += yyleng; return OP_ATRIBUICAO;}
-{literal}               { yylval.lexema = strdup(yytext); setUltimo("LITERAL", yytext); coluna += yyleng; return LITERAL;}
+"="                     { yylval.token.lexema = strdup(yytext); setUltimo("OP_ATRIBUICAO", yytext); coluna += yyleng; return OP_ATRIBUICAO;}
+{literal}               { yylval.token.lexema = strdup(yytext); setUltimo("LITERAL", yytext); coluna += yyleng; return LITERAL;}
 
 %{ 
 // Erros específicos 

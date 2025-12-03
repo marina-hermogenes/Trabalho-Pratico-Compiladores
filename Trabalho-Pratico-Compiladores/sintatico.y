@@ -60,28 +60,33 @@
 %}
 
 %union {
-    char* lexema;
+    struct {
+        char* lexema;
+    } token;
     struct {
         char* code;
         char* temp;
     } expressao;
+    struct {
+        char* code;
+    } elemento;
 }
 
 /* ======== Declaração dos tokens ======== */
-%token <lexema> TIPO_INT TIPO_BOOL
+%token <token> TIPO_INT TIPO_BOOL
 %token IF ELSE WHILE
 %token OP_ATRIBUICAO NOT
 %token ABRE_PARENTESES FECHA_PARENTESES ABRE_CHAVES FECHA_CHAVES
 %token PONTO_E_VIRGULA VIRGULA
 %token MAIS MENOS MULT DIV MOD
 
-%token <lexema> IDENTIFICADOR NUM_INTEIRO NUM_INTEIRO_NEGATIVO LITERAL TRUE FALSE
-%token <lexema> OP_RELACIONAL OP_LOGICO
-%token <lexema> PRINT READ
-%type <lexema> itemPrint comando comandos while_stmt bloco declaracao print read maisDecl maisExpr
-%type <lexema> if_stmt
+%token <token> IDENTIFICADOR NUM_INTEIRO NUM_INTEIRO_NEGATIVO LITERAL TRUE FALSE
+%token <token> OP_RELACIONAL OP_LOGICO
+%token <token> PRINT READ
+%type <elemento> itemPrint comando comandos while_stmt bloco declaracao print read maisDecl maisExpr
+%type <elemento> if_stmt
 %type <expressao> expr atribuicao
-%type <lexema> tipo
+%type <elemento> tipo
 
 /* ======== Diretivas de precedência ======== */
 /* Ordem: da menor para a maior precedência */
@@ -108,43 +113,43 @@ programa
     : {
         initTabela();
     } comandos {
-        c3e_gen($2);
+        c3e_gen($2.code);
     }
     ;
 
 // sequência de comandos
 comandos
     : comandos comando {
-        int size = strlen($1) + strlen($2) + 5;
+        int size = strlen($1.code) + strlen($2.code) + 5;
         char *s = malloc(size);
-        sprintf(s, "%s%s", $1, $2);
-        $$ = s;
+        sprintf(s, "%s%s", $1.code, $2.code);
+        $$.code = s;
     }
     | {
-        $$ = strdup("");
+        $$.code = strdup("");
     }
     ;
 
 // tipos de comandos que a linguagem suporta
 comando
     : declaracao PONTO_E_VIRGULA {
-        $$ = $1;
+        $$.code = $1.code;
     }
     | atribuicao PONTO_E_VIRGULA {
-        $$ = $1.code;
+        $$.code = $1.code;
     }
     | bloco {
-        $$ = $1;
+        $$.code = $1.code;
     }
     | print PONTO_E_VIRGULA {
-        $$ = $1;
+        $$.code = $1.code;
     }
     | read PONTO_E_VIRGULA {
-        $$ = $1;
+        $$.code = $1.code;
     }
     | if_stmt 
     | while_stmt {
-        $$ = $1;
+        $$.code = $1.code;
     }
     | error PONTO_E_VIRGULA {fprintf(stderr, "Sincronizando com ';'.\n"); yyerrok;} // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
     ;
@@ -155,19 +160,19 @@ declaracao
         declararSimbolo($2.temp);
         tipoAtual = NULL;
         
-        int size = strlen($2.code) + strlen($3) + 5;
+        int size = strlen($2.code) + strlen($3.code) + 5;
         char *s = malloc(size);
-        sprintf(s, "%s%s", $2.code, $3);
-        $$ = s;
+        sprintf(s, "%s%s", $2.code, $3.code);
+        $$.code = s;
     }
     | tipo IDENTIFICADOR maisDecl {
-        declararSimbolo($2);
+        declararSimbolo($2.lexema);
         tipoAtual = NULL;
 
-        int size = strlen($2) + strlen($3) + 10;
+        int size = strlen($2.lexema) + strlen($3.code) + 10;
         char *s = malloc(size);
-        sprintf(s, "%s = 0\n%s", $2, $3);
-        $$ = s;
+        sprintf(s, "%s = 0\n%s", $2.lexema, $3.code);
+        $$.code = s;
       }
     ;
 
@@ -176,33 +181,33 @@ maisDecl
     : VIRGULA atribuicao maisDecl {
         declararSimbolo($2.temp);
 
-        int size = strlen($2.code) + strlen($3) + 10;
+        int size = strlen($2.code) + strlen($3.code) + 10;
         char *s = malloc(size);
-        sprintf(s, "%s%s", $2.code, $3);
-        $$ = s;
+        sprintf(s, "%s%s", $2.code, $3.code);
+        $$.code = s;
     }
     | VIRGULA IDENTIFICADOR maisDecl {
-        declararSimbolo($2);
+        declararSimbolo($2.lexema);
 
-        int size = strlen($2) + strlen($3) + 10;
+        int size = strlen($2.lexema) + strlen($3.code) + 10;
         char *s = malloc(size);
-        sprintf(s, "%s = 0\n%s", $2, $3);
-        $$ = s;
+        sprintf(s, "%s = 0\n%s", $2.lexema, $3.code);
+        $$.code = s;
     }
     | {
-        $$ = strdup("");
+        $$.code = strdup("");
     }
     ;
 
 // tipos de variáveis suportadas
 tipo
     : TIPO_INT {
-        tipoAtual = $1;
-        $$ = $1;
+        tipoAtual = $1.lexema;
+        $$.code = $1.lexema;
     }
     | TIPO_BOOL {
-        tipoAtual = $1;
-        $$ = $1;
+        tipoAtual = $1.lexema;
+        $$.code = $1.lexema;
     }
     ;
 
@@ -210,16 +215,16 @@ tipo
 atribuicao
     : IDENTIFICADOR OP_ATRIBUICAO expr {
         if (tipoAtual == NULL) {
-             verificarSimbolo($1);
+             verificarSimbolo($1.lexema);
         }
 
-        int size = strlen($3.code) + strlen($1) + strlen($3.temp) + 20;
+        int size = strlen($3.code) + strlen($1.lexema) + strlen($3.temp) + 20;
         char* code = malloc(size);
 
-        sprintf(code, "%s%s = %s\n", $3.code, $1, $3.temp);
+        sprintf(code, "%s%s = %s\n", $3.code, $1.lexema, $3.temp);
 
         $$.code = code;
-        $$.temp = strdup($1);
+        $$.temp = strdup($1.lexema);
     }
     ;
 
@@ -269,7 +274,7 @@ expr:
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
-        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2, $3.temp);
+        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2.lexema, $3.temp);
         $$.code = code;
         $$.temp = t;
     }
@@ -277,7 +282,7 @@ expr:
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
-        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2, $3.temp);
+        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2.lexema, $3.temp);
         $$.code = code;
         $$.temp = t;
      }
@@ -302,25 +307,25 @@ expr:
         $$.temp = $2.temp;
     }
     | IDENTIFICADOR {
-        verificarSimbolo($1);
+        verificarSimbolo($1.lexema);
         $$.code = strdup("");
-        $$.temp = strdup($1);
+        $$.temp = strdup($1.lexema);
     }
     | NUM_INTEIRO {
         $$.code = strdup("");
-        $$.temp = strdup($1);
+        $$.temp = strdup($1.lexema);
     }
     | NUM_INTEIRO_NEGATIVO {
         $$.code = strdup("");
-        $$.temp = strdup($1);
+        $$.temp = strdup($1.lexema);
     }
     | TRUE {
         $$.code = strdup("");
-        $$.temp = strdup($1);
+        $$.temp = strdup($1.lexema);
     }
     | FALSE {
         $$.code = strdup("");
-        $$.temp = strdup($1);
+        $$.temp = strdup($1.lexema);
     }
     | atribuicao {
         $$.code = $1.code;
@@ -334,7 +339,7 @@ bloco
         pushEscopo();
     } comandos FECHA_CHAVES {
         popEscopo();
-        $$ = $3;
+        $$.code = $3.code;
     }
     ;
 
@@ -373,10 +378,10 @@ while_stmt
         char* code7 = malloc(size3);
         sprintf(code7, "goto %s\n", Lfim);
 
-        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen(code4) + strlen($5) + strlen(code6) + strlen(code7) + 100;
+        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen(code4) + strlen($5.code) + strlen(code6) + strlen(code7) + 100;
         char* code = malloc(size);
-        sprintf(code, "%s%s%s%s%s%s%s", code1, code2, code7, code3, $5, code4, code6);
-        $$ = code;
+        sprintf(code, "%s%s%s%s%s%s%s", code1, code2, code7, code3, $5.code, code4, code6);
+        $$.code = code;
 
     }
 
@@ -429,10 +434,10 @@ if_stmt
         char* code4 = malloc(size4);
         sprintf(code4, "goto %s\n", Lfim);
 
-        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5) + strlen(code4) + strlen($7) + strlen(code5) + strlen(code6) + strlen(code7) + 100;
+        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5.code) + strlen(code4) + strlen($7.code) + strlen(code5) + strlen(code6) + strlen(code7) + 100;
         char* code = malloc(size);
-        sprintf(code, "%s%s%s%s%s%s%s%s%s", code1, code2, code3, $5, code4, code5, $7, code6, code7);
-        $$ = code;
+        sprintf(code, "%s%s%s%s%s%s%s%s%s", code1, code2, code3, $5.code, code4, code5, $7.code, code6, code7);
+        $$.code = code;
     }
     | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE {
         char *Linicio = newLabel();
@@ -463,10 +468,10 @@ if_stmt
         char* code4 = malloc(size4);
         sprintf(code4, "goto %s\n", Lfim);
 
-        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5) + strlen(code4) + strlen(code5) + 100;
+        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5.code) + strlen(code4) + strlen(code5) + 100;
         char* code = malloc(size);
-        sprintf(code, "%s%s%s%s%s%s", code1, code2, code3, $5, code4, code5);
-        $$ = code;
+        sprintf(code, "%s%s%s%s%s%s", code1, code2, code3, $5.code, code4, code5);
+        $$.code = code;
     }
     | IF error PONTO_E_VIRGULA {  // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         int coluna_erro = coluna - strlen(yytext); 
@@ -479,58 +484,58 @@ if_stmt
 // leitura em um identificador
 read
     : READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES {
-        verificarSimbolo($3);
+        verificarSimbolo($3.lexema);
 
-        int size = strlen($1) + strlen($3) + 10;
+        int size = strlen($1.lexema) + strlen($3.lexema) + 10;
         char* code = malloc(size);
-        sprintf(code, "READ %s", $3);
-        $$ = code;
+        sprintf(code, "READ %s", $3.lexema);
+        $$.code = code;
     }
     ;
 
 // print de um ou mais literais ou expressões
 print
     : PRINT ABRE_PARENTESES itemPrint FECHA_PARENTESES {
-        char *code = malloc(strlen($3) + 1);
-        strcpy(code, $3);
-        $$ = code;
+        char *code = malloc(strlen($3.code) + 1);
+        strcpy(code, $3.code);
+        $$.code = code;
     }
     ;
 
 itemPrint
     : expr maisExpr {
-        int size = strlen($1.temp) + strlen($2) + 20;
+        int size = strlen($1.temp) + strlen($2.code) + 20;
         char *s = malloc(size);
 
-        sprintf(s, "%sPRINT %s\n%s", $1.code, $1.temp, $2);
-        $$ = s;
+        sprintf(s, "%sPRINT %s\n%s", $1.code, $1.temp, $2.code);
+        $$.code = s;
     }
     | LITERAL maisExpr {
-        int size = strlen($1) + strlen($2) + 20;
+        int size = strlen($1.lexema) + strlen($2.code) + 20;
         char *s = malloc(size);
 
-        sprintf(s, "PRINT %s\n%s", $1, $2);
-        $$ = s;
+        sprintf(s, "PRINT %s\n%s", $1.lexema, $2.code);
+        $$.code = s;
     }
 
 // sequência de expressões e literais separados por vírgula
 maisExpr
     : VIRGULA expr maisExpr {
-        int size = strlen($2.temp) + strlen($2.temp) + strlen($3) + 50;
+        int size = strlen($2.temp) + strlen($2.temp) + strlen($3.code) + 50;
         char *s = malloc(size);
 
-        sprintf(s, "%sPRINT %s\n%s", $2.code, $2.temp, $3);
-        $$ = s;
+        sprintf(s, "%sPRINT %s\n%s", $2.code, $2.temp, $3.code);
+        $$.code = s;
     }
     | VIRGULA LITERAL maisExpr {
-        int size = strlen($2) + strlen($3) + 20;
+        int size = strlen($2.lexema) + strlen($3.code) + 20;
         char *s = malloc(size);
 
-        sprintf(s, "PRINT %s\n%s", $2, $3);
-        $$ = s;
+        sprintf(s, "PRINT %s\n%s", $2.lexema, $3.code);
+        $$.code = s;
     }
     | {
-        $$ = strdup("");
+        $$.code = strdup("");
     }
     ;
 
