@@ -14,6 +14,7 @@
     int yylex(void);
     void yyerror(const char *s);
 
+    /* --- PARTE PESSOA C (GERADOR) --- */
     char tbuffer[50];
     int tempCount = 0;
     int labelCount = 0;
@@ -33,6 +34,30 @@
         fprintf(f, "%s", instr);
         fclose(f);
     }
+
+    /* --- PARTE PESSOA A (TABELA DE SIMBOLOS) --- */
+    char *tipoAtual = NULL; /* Flag global para saber se estamos declarando int ou bool */
+
+    typedef struct Simbolo {
+        char *nome;
+        char *tipo;
+        int nivelEscopo;
+        struct Simbolo *prox;
+    } Simbolo;
+
+    typedef struct Escopo {
+        int nivel;
+        Simbolo *lista;
+        struct Escopo *pai;
+    } Escopo;
+
+    Escopo *escopoAtual = NULL;
+
+    void initTabela();
+    void pushEscopo();
+    void popEscopo();
+    void declararSimbolo(char *nome);
+    void verificarSimbolo(char *nome);
 %}
 
 %union {
@@ -44,7 +69,8 @@
 }
 
 /* ======== Declaração dos tokens ======== */
-%token TIPO_INT TIPO_BOOL IF ELSE WHILE
+%token <lexema> TIPO_INT TIPO_BOOL
+%token IF ELSE WHILE
 %token OP_ATRIBUICAO NOT
 %token ABRE_PARENTESES FECHA_PARENTESES ABRE_CHAVES FECHA_CHAVES
 %token PONTO_E_VIRGULA VIRGULA
@@ -56,6 +82,7 @@
 %type <lexema> itemPrint comando comandos while_stmt bloco declaracao print read maisDecl maisExpr
 %type <lexema> if_stmt
 %type <expressao> expr atribuicao
+%type <lexema> tipo
 
 /* ======== Diretivas de precedência ======== */
 /* Ordem: da menor para a maior precedência */
@@ -79,8 +106,10 @@
 
 // símbolo inicial
 programa 
-    : comandos {
-        c3e_gen($1);
+    : {
+        initTabela();
+    } comandos {
+        c3e_gen($2);
     }
     ;
 
@@ -124,15 +153,21 @@ comando
 // declaração de variáveis
 declaracao
     : tipo atribuicao maisDecl {
+        declararSimbolo($2.temp);
+        tipoAtual = NULL;
+        
         int size = strlen($2.code) + strlen($3) + 5;
         char *s = malloc(size);
         sprintf(s, "%s%s", $2.code, $3);
         $$ = s;
     }
     | tipo IDENTIFICADOR maisDecl {
+        declararSimbolo($2);
+        tipoAtual = NULL;
+
         int size = strlen($2) + strlen($3) + 10;
         char *s = malloc(size);
-        sprintf(s, "%s = 0%s", $2, $3);
+        sprintf(s, "%s = 0\n%s", $2, $3);
         $$ = s;
       }
     ;
@@ -140,15 +175,19 @@ declaracao
 // sequência de declarações, separadas por vírgula
 maisDecl
     : VIRGULA atribuicao maisDecl {
+        declararSimbolo($2.temp);
+
         int size = strlen($2.code) + strlen($3) + 10;
         char *s = malloc(size);
         sprintf(s, "%s%s", $2.code, $3);
         $$ = s;
     }
     | VIRGULA IDENTIFICADOR maisDecl {
+        declararSimbolo($2);
+
         int size = strlen($2) + strlen($3) + 10;
         char *s = malloc(size);
-        sprintf(s, "%s = 0%s", $2, $3);
+        sprintf(s, "%s = 0\n%s", $2, $3);
         $$ = s;
     }
     | {
@@ -158,13 +197,23 @@ maisDecl
 
 // tipos de variáveis suportadas
 tipo
-    : TIPO_INT
-    | TIPO_BOOL
+    : TIPO_INT {
+        tipoAtual = $1;
+        $$ = $1;
+    }
+    | TIPO_BOOL {
+        tipoAtual = $1;
+        $$ = $1;
+    }
     ;
 
 // atribuição de uma expressão a um ou mais identificadores
 atribuicao
     : IDENTIFICADOR OP_ATRIBUICAO expr {
+        if (tipoAtual == NULL) {
+             verificarSimbolo($1);
+        }
+
         int size = strlen($3.code) + strlen($1) + strlen($3.temp) + 20;
         char* code = malloc(size);
 
@@ -254,6 +303,7 @@ expr:
         $$.temp = $2.temp;
     }
     | IDENTIFICADOR {
+        verificarSimbolo($1);
         $$.code = strdup("");
         $$.temp = strdup($1);
     }
@@ -266,11 +316,11 @@ expr:
         $$.temp = strdup($1);
     }
     | TRUE {
-        $$.code = strdup($1);
+        $$.code = strdup("");
         $$.temp = strdup($1);
     }
     | FALSE {
-        $$.code = strdup($1);
+        $$.code = strdup("");
         $$.temp = strdup($1);
     }
     | atribuicao {
@@ -281,8 +331,11 @@ expr:
 
 // comandos entre chaves
 bloco
-    : ABRE_CHAVES comandos FECHA_CHAVES {
-        $$ = $2;
+    : ABRE_CHAVES {
+        pushEscopo();
+    } comandos FECHA_CHAVES {
+        popEscopo();
+        $$ = $3;
     }
     ;
 
@@ -427,6 +480,8 @@ if_stmt
 // leitura em um identificador
 read
     : READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES {
+        verificarSimbolo($3);
+
         int size = strlen($1) + strlen($3) + 10;
         char* code = malloc(size);
         sprintf(code, "READ %s", $3);
@@ -502,8 +557,79 @@ void yyerror(const char *s) {
 /* ======== Função principal ======== */
 int main(void) {
     yyparse();
+    if(escopoAtual) {
+        popEscopo();
+    }
     if (qtErrosSintaticos == 0) printf("\nAnálise concluída sem erros sintáticos!\n\n"); 
     else printf("\nAnálise completa. %d erros sintáticos encontrados.\n\n", qtErrosSintaticos);
-    imprimirTabela();
     return 0;
+}
+
+/* ======== FUNÇÕES DA TABELA DE SÍMBOLOS (PESSOA A) ======== */
+void initTabela() {
+    escopoAtual = NULL;
+    pushEscopo();
+}
+
+void pushEscopo() {
+    Escopo *novo = (Escopo*) malloc(sizeof(Escopo));
+    novo->lista = NULL;
+    novo->pai = escopoAtual;
+    novo->nivel = (escopoAtual == NULL) ? 0 : escopoAtual->nivel + 1;
+    escopoAtual = novo;
+    printf("\n>>> Abrindo escopo nivel %d\n", novo->nivel);
+}
+
+void popEscopo() {
+    if (escopoAtual == NULL) return;
+    
+    printf("\n<<< Fechando escopo nivel %d. Dump da Tabela:\n", escopoAtual->nivel);
+    Simbolo *s = escopoAtual->lista;
+    while(s != NULL) {
+        printf("    VAR: %-15s | TIPO: %s\n", s->nome, s->tipo);
+        Simbolo *prox = s->prox;
+        free(s->nome);
+        free(s->tipo);
+        free(s);
+        s = prox;
+    }
+    printf("---------------------------------------------\n");
+    
+    Escopo *pai = escopoAtual->pai;
+    free(escopoAtual);
+    escopoAtual = pai;
+}
+
+void declararSimbolo(char *nome) {
+    if(escopoAtual == NULL) return;
+
+    Simbolo *s = escopoAtual->lista;
+    while(s) {
+        if(strcmp(s->nome, nome) == 0) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Redeclaracao de '%s'.\n", linha, nome);
+            return;
+        }
+        s = s->prox;
+    }
+
+    Simbolo *novo = (Simbolo*) malloc(sizeof(Simbolo));
+    novo->nome = strdup(nome);
+    novo->tipo = tipoAtual ? strdup(tipoAtual) : strdup("desconhecido");
+    novo->nivelEscopo = escopoAtual->nivel;
+    novo->prox = escopoAtual->lista;
+    escopoAtual->lista = novo;
+    printf("    + Declarado: %s (%s)\n", nome, novo->tipo);
+}
+
+void verificarSimbolo(char *nome) {
+    Escopo *aux = escopoAtual;
+    while(aux) {
+        Simbolo *s = aux->lista;
+        while(s) {
+            if(strcmp(s->nome, nome) == 0) return; 
+            s = s->prox;
+        }
+        aux = aux->pai;
+    }
+    fprintf(stderr, "ERRO SEMANTICO (Linha %d): Variavel '%s' nao declarada.\n", linha, nome);
 }
