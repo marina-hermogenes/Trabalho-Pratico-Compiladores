@@ -9,10 +9,21 @@
 
     extern void imprimirTabela();
 
-    int qtErrosSintaticos = 0; /* Contador de erros sintáticos*/
+    int qtErrosSintaticos = 0;
+    int qtErrosSemanticos = 0; 
 
     int yylex(void);
     void yyerror(const char *s);
+
+    #define T_ERROR 0
+    #define T_INT   1
+    #define T_BOOL  2
+    
+    const char* getNomeTipo(int id) {
+        if (id == T_INT) return "int";
+        if (id == T_BOOL) return "bool";
+        return "indefinido";
+    }
 
     char tbuffer[50];
     int tempCount = 0;
@@ -35,11 +46,11 @@
     }
 
     /* --- TABELA DE SIMBOLOS --- */
-    char *tipoAtual = NULL; /* Flag global para saber se estamos declarando int ou bool */
+    int tipoAtualID = T_ERROR; 
 
     typedef struct Simbolo {
         char *nome;
-        char *tipo;
+        int typeID; 
         int nivelEscopo;
         struct Simbolo *prox;
     } Simbolo;
@@ -56,7 +67,7 @@
     void pushEscopo();
     void popEscopo();
     void declararSimbolo(char *nome);
-    void verificarSimbolo(char *nome);
+    int getTipoSimbolo(char *nome); 
 %}
 
 %union {
@@ -66,9 +77,11 @@
     struct {
         char* code;
         char* temp;
+        int typeID; 
     } expressao;
     struct {
         char* code;
+        int typeID; 
     } elemento;
 }
 
@@ -90,14 +103,13 @@
 
 /* ======== Diretivas de precedência ======== */
 /* Ordem: da menor para a maior precedência */
-
 %right OP_ATRIBUICAO 
 %left OP_LOGICO            
 %left OP_RELACIONAL         
 %left MAIS MENOS               
 %left MULT DIV MOD           
 %right NOT            
-%right UMINUS             
+%right UMINUS         
 
 /* ======== Precedência especial para o dangling else ======== */
 
@@ -110,11 +122,7 @@
 
 // símbolo inicial
 programa 
-    : {
-        initTabela();
-    } comandos {
-        c3e_gen($2.code);
-    }
+    : { initTabela(); } comandos { c3e_gen($2.code); }
     ;
 
 // sequência de comandos
@@ -125,40 +133,25 @@ comandos
         sprintf(s, "%s%s", $1.code, $2.code);
         $$.code = s;
     }
-    | {
-        $$.code = strdup("");
-    }
+    | { $$.code = strdup(""); }
     ;
 
 // tipos de comandos que a linguagem suporta
 comando
-    : declaracao PONTO_E_VIRGULA {
-        $$.code = $1.code;
-    }
-    | atribuicao PONTO_E_VIRGULA {
-        $$.code = $1.code;
-    }
-    | bloco {
-        $$.code = $1.code;
-    }
-    | print PONTO_E_VIRGULA {
-        $$.code = $1.code;
-    }
-    | read PONTO_E_VIRGULA {
-        $$.code = $1.code;
-    }
+    : declaracao PONTO_E_VIRGULA { $$.code = $1.code; }
+    | atribuicao PONTO_E_VIRGULA { $$.code = $1.code; }
+    | bloco { $$.code = $1.code; }
+    | print PONTO_E_VIRGULA { $$.code = $1.code; }
+    | read PONTO_E_VIRGULA { $$.code = $1.code; }
     | if_stmt 
-    | while_stmt {
-        $$.code = $1.code;
-    }
-    | error PONTO_E_VIRGULA {fprintf(stderr, "Sincronizando com ';'.\n"); yyerrok;} // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
+    | while_stmt { $$.code = $1.code; }
+    | error PONTO_E_VIRGULA { fprintf(stderr, "Sincronizando com ';'.\n"); yyerrok; }
     ;
 
 // declaração de variáveis
 declaracao
     : tipo atribuicao maisDecl {
-        declararSimbolo($2.temp);
-        tipoAtual = NULL;
+        tipoAtualID = T_ERROR; 
         
         int size = strlen($2.code) + strlen($3.code) + 5;
         char *s = malloc(size);
@@ -167,7 +160,7 @@ declaracao
     }
     | tipo IDENTIFICADOR maisDecl {
         declararSimbolo($2.lexema);
-        tipoAtual = NULL;
+        tipoAtualID = T_ERROR;
 
         int size = strlen($2.lexema) + strlen($3.code) + 10;
         char *s = malloc(size);
@@ -179,8 +172,6 @@ declaracao
 // sequência de declarações, separadas por vírgula
 maisDecl
     : VIRGULA atribuicao maisDecl {
-        declararSimbolo($2.temp);
-
         int size = strlen($2.code) + strlen($3.code) + 10;
         char *s = malloc(size);
         sprintf(s, "%s%s", $2.code, $3.code);
@@ -202,11 +193,11 @@ maisDecl
 // tipos de variáveis suportadas
 tipo
     : TIPO_INT {
-        tipoAtual = $1.lexema;
+        tipoAtualID = T_INT; // Define contexto global
         $$.code = $1.lexema;
     }
     | TIPO_BOOL {
-        tipoAtual = $1.lexema;
+        tipoAtualID = T_BOOL; // Define contexto global
         $$.code = $1.lexema;
     }
     ;
@@ -214,130 +205,203 @@ tipo
 // atribuição de uma expressão a um ou mais identificadores
 atribuicao
     : IDENTIFICADOR OP_ATRIBUICAO expr {
-        if (tipoAtual == NULL) {
-             verificarSimbolo($1.lexema);
+        int idType = T_ERROR;
+        if (tipoAtualID == T_ERROR) {
+             idType = getTipoSimbolo($1.lexema); 
+             if (idType != T_ERROR && $3.typeID != T_ERROR && idType != $3.typeID) {
+                 fprintf(stderr, "ERRO SEMANTICO (Linha %d): Atribuicao incompativel. '%s' eh %s, mas recebeu %s.\n",
+                    linha, $1.lexema, getNomeTipo(idType), getNomeTipo($3.typeID));
+                 qtErrosSemanticos++;
+             }
+        } else {
+             idType = tipoAtualID;
+             if ($3.typeID != T_ERROR && $3.typeID != idType) {
+                fprintf(stderr, "ERRO SEMANTICO (Linha %d): Inicializacao invalida. Esperado %s, encontrado %s.\n", 
+                        linha, getNomeTipo(idType), getNomeTipo($3.typeID));
+                qtErrosSemanticos++;
+             }
+
+             declararSimbolo($1.lexema);
         }
+
+        $$.typeID = idType; 
+        $$.temp = strdup($1.lexema); 
 
         int size = strlen($3.code) + strlen($1.lexema) + strlen($3.temp) + 20;
         char* code = malloc(size);
-
         sprintf(code, "%s%s = %s\n", $3.code, $1.lexema, $3.temp);
-
         $$.code = code;
-        $$.temp = strdup($1.lexema);
     }
     ;
 
 // expressões aritméticas, relacionais e lógicas
 expr:
       expr MAIS expr {
+        if ($1.typeID != T_INT || $3.typeID != T_INT) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '+' requer operandos INT.\n", linha);
+            $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_INT;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s%s = %s + %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | expr MENOS expr {
+        if ($1.typeID != T_INT || $3.typeID != T_INT) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '-' requer operandos INT.\n", linha);
+            $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_INT;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s%s = %s - %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | expr MULT expr {
+        if ($1.typeID != T_INT || $3.typeID != T_INT) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '*' requer operandos INT.\n", linha);
+            $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_INT;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s%s = %s * %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | expr DIV expr {
+        if ($1.typeID != T_INT || $3.typeID != T_INT) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '/' requer operandos INT.\n", linha);
+            $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_INT;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s%s = %s / %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | expr MOD expr {
+        if ($1.typeID != T_INT || $3.typeID != T_INT) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '%%' requer operandos INT.\n", linha);
+            $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_INT;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s%s = %s %% %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | expr OP_RELACIONAL expr {
+        if ($1.typeID != T_INT || $3.typeID != T_INT) {
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores relacionais comparam apenas INT.\n", linha);
+             $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_BOOL;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2.lexema, $3.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | expr OP_LOGICO expr {
+        if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores logicos requerem operandos BOOL.\n", linha);
+             $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_BOOL;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($1.code) + strlen($3.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2.lexema, $3.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
      }
     | NOT expr {
+        if ($2.typeID != T_BOOL) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '!' requer operando BOOL.\n", linha);
+            $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_BOOL;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($2.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s + NOT %s\n", $2.code, t, $2.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | MENOS expr %prec UMINUS {
+        if ($2.typeID != T_INT) {
+            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Menos unario requer operando INT.\n", linha);
+            $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_INT;
+        }
+
         char* t = new_nomeTemporaria();
         int size = strlen($2.code) + 50;
         char* code = malloc(size);
         sprintf(code, "%s%s + MINUS %s\n", $2.code, t, $2.temp);
-        $$.code = code;
-        $$.temp = t;
+        $$.code = code; $$.temp = t;
     }
     | ABRE_PARENTESES expr FECHA_PARENTESES {
         $$.code = $2.code;
         $$.temp = $2.temp;
+        $$.typeID = $2.typeID; 
     }
     | IDENTIFICADOR {
-        verificarSimbolo($1.lexema);
+        $$.typeID = getTipoSimbolo($1.lexema);
         $$.code = strdup("");
         $$.temp = strdup($1.lexema);
     }
     | NUM_INTEIRO {
+        $$.typeID = T_INT; 
         $$.code = strdup("");
         $$.temp = strdup($1.lexema);
     }
     | NUM_INTEIRO_NEGATIVO {
+        $$.typeID = T_INT;
         $$.code = strdup("");
         $$.temp = strdup($1.lexema);
     }
     | TRUE {
+        $$.typeID = T_BOOL; 
         $$.code = strdup("");
         $$.temp = strdup($1.lexema);
     }
     | FALSE {
+        $$.typeID = T_BOOL; 
         $$.code = strdup("");
         $$.temp = strdup($1.lexema);
     }
     | atribuicao {
         $$.code = $1.code;
         $$.temp = $1.temp;
+        $$.typeID = $1.typeID; 
     }
 ;
 
 // comandos entre chaves
 bloco
-    : ABRE_CHAVES {
-        pushEscopo();
-    } comandos FECHA_CHAVES {
+    : ABRE_CHAVES { pushEscopo(); } comandos FECHA_CHAVES {
         popEscopo();
         $$.code = $3.code;
     }
@@ -346,9 +410,14 @@ bloco
 // estrutura de repetição while
 while_stmt
     : WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando {
-        char *Linicio = newLabel();
+        if ($3.typeID != T_BOOL && $3.typeID != T_ERROR) {
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do WHILE deve ser BOOL. Encontrado: %s\n", 
+                linha, getNomeTipo($3.typeID));
+             qtErrosSemanticos++;
+        }
 
         // Linicio
+        char *Linicio = newLabel();
         int size1 = strlen(Linicio) + 5;
         char* code1 = malloc(size1);
         sprintf(code1, "\n%s:\n", Linicio);
@@ -382,12 +451,8 @@ while_stmt
         char* code = malloc(size);
         sprintf(code, "%s%s%s%s%s%s%s", code1, code2, code7, code3, $5.code, code4, code6);
         $$.code = code;
-
     }
-
-    | WHILE error PONTO_E_VIRGULA {  // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
-        int coluna_erro = coluna - strlen(yytext); 
-        if (coluna_erro < 1) coluna_erro = 1;
+    | WHILE error PONTO_E_VIRGULA { // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         fprintf(stderr, "Erro na formatação do WHILE. Sincronizando com ';'.\n");
         yyerrok;
       }
@@ -396,6 +461,12 @@ while_stmt
 // estrutura condicional if (com e sem else)
 if_stmt
     : IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando {
+        if ($3.typeID != T_BOOL && $3.typeID != T_ERROR) {
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do IF deve ser BOOL. Encontrado: %s\n", 
+                linha, getNomeTipo($3.typeID));
+             qtErrosSemanticos++;
+        }
+
         char *Linicio = newLabel();
         char *Lcodigo = newLabel();
 
@@ -440,10 +511,16 @@ if_stmt
         $$.code = code;
     }
     | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE {
+        if ($3.typeID != T_BOOL && $3.typeID != T_ERROR) {
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do IF deve ser BOOL. Encontrado: %s\n", 
+                linha, getNomeTipo($3.typeID));
+             qtErrosSemanticos++;
+        }
+
         char *Linicio = newLabel();
         char *Lcodigo = newLabel();
 
-        // Condição 
+        // Condição
         int size1 = strlen($3.temp) + strlen($3.code) + strlen(Lcodigo) + 20;
         char* code1 = malloc(size1);
         sprintf(code1, "%sIF %s goto %s\n", $3.code, $3.temp, Lcodigo);
@@ -473,9 +550,7 @@ if_stmt
         sprintf(code, "%s%s%s%s%s%s", code1, code2, code3, $5.code, code4, code5);
         $$.code = code;
     }
-    | IF error PONTO_E_VIRGULA {  // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
-        int coluna_erro = coluna - strlen(yytext); 
-        if (coluna_erro < 1) coluna_erro = 1;
+    | IF error PONTO_E_VIRGULA { // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         fprintf(stderr, "Erro na formatação do IF. Sincronizando com ';'.\n");
         yyerrok;
       } 
@@ -484,7 +559,7 @@ if_stmt
 // leitura em um identificador
 read
     : READ ABRE_PARENTESES IDENTIFICADOR FECHA_PARENTESES {
-        verificarSimbolo($3.lexema);
+        getTipoSimbolo($3.lexema); 
 
         int size = strlen($1.lexema) + strlen($3.lexema) + 10;
         char* code = malloc(size);
@@ -506,37 +581,32 @@ itemPrint
     : expr maisExpr {
         int size = strlen($1.temp) + strlen($2.code) + 20;
         char *s = malloc(size);
-
         sprintf(s, "%sPRINT %s\n%s", $1.code, $1.temp, $2.code);
         $$.code = s;
     }
     | LITERAL maisExpr {
         int size = strlen($1.lexema) + strlen($2.code) + 20;
         char *s = malloc(size);
-
         sprintf(s, "PRINT %s\n%s", $1.lexema, $2.code);
         $$.code = s;
     }
+    ;
 
 // sequência de expressões e literais separados por vírgula
 maisExpr
     : VIRGULA expr maisExpr {
         int size = strlen($2.temp) + strlen($2.temp) + strlen($3.code) + 50;
         char *s = malloc(size);
-
         sprintf(s, "%sPRINT %s\n%s", $2.code, $2.temp, $3.code);
         $$.code = s;
     }
     | VIRGULA LITERAL maisExpr {
         int size = strlen($2.lexema) + strlen($3.code) + 20;
         char *s = malloc(size);
-
         sprintf(s, "PRINT %s\n%s", $2.lexema, $3.code);
         $$.code = s;
     }
-    | {
-        $$.code = strdup("");
-    }
+    | { $$.code = strdup(""); }
     ;
 
 %%
@@ -561,11 +631,14 @@ void yyerror(const char *s) {
 /* ======== Função principal ======== */
 int main(void) {
     yyparse();
-    if(escopoAtual) {
-        popEscopo();
-    }
-    if (qtErrosSintaticos == 0) printf("\nAnálise concluída sem erros sintáticos!\n\n"); 
-    else printf("\nAnálise completa. %d erros sintáticos encontrados.\n\n", qtErrosSintaticos);
+    if(escopoAtual) popEscopo();
+    
+    printf("\n----------------------------------------------\n");
+    if (qtErrosSintaticos == 0 && qtErrosSemanticos == 0) 
+        printf("SUCESSO: Analise concluida sem erros.\n"); 
+    else 
+        printf("FALHA: %d erros sintaticos, %d erros semanticos.\n", qtErrosSintaticos, qtErrosSemanticos);
+    printf("----------------------------------------------\n\n");
     return 0;
 }
 
@@ -586,14 +659,11 @@ void pushEscopo() {
 
 void popEscopo() {
     if (escopoAtual == NULL) return;
-    
     printf("\n<<< Fechando escopo nivel %d. Dump da Tabela:\n", escopoAtual->nivel);
     Simbolo *s = escopoAtual->lista;
     while(s != NULL) {
-        printf("    VAR: %-15s | TIPO: %s\n", s->nome, s->tipo);
         Simbolo *prox = s->prox;
         free(s->nome);
-        free(s->tipo);
         free(s);
         s = prox;
     }
@@ -606,11 +676,11 @@ void popEscopo() {
 
 void declararSimbolo(char *nome) {
     if(escopoAtual == NULL) return;
-
     Simbolo *s = escopoAtual->lista;
     while(s) {
         if(strcmp(s->nome, nome) == 0) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Redeclaracao de '%s'.\n", linha, nome);
+            qtErrosSemanticos++;
             return;
         }
         s = s->prox;
@@ -618,22 +688,24 @@ void declararSimbolo(char *nome) {
 
     Simbolo *novo = (Simbolo*) malloc(sizeof(Simbolo));
     novo->nome = strdup(nome);
-    novo->tipo = tipoAtual ? strdup(tipoAtual) : strdup("desconhecido");
+    novo->typeID = (tipoAtualID != T_ERROR) ? tipoAtualID : T_ERROR; 
     novo->nivelEscopo = escopoAtual->nivel;
     novo->prox = escopoAtual->lista;
     escopoAtual->lista = novo;
-    printf("    + Declarado: %s (%s)\n", nome, novo->tipo);
+     printf("    + Declarado: %s (%s)\n", nome, getNomeTipo(novo->typeID));
 }
 
-void verificarSimbolo(char *nome) {
+int getTipoSimbolo(char *nome) {
     Escopo *aux = escopoAtual;
     while(aux) {
         Simbolo *s = aux->lista;
         while(s) {
-            if(strcmp(s->nome, nome) == 0) return; 
+            if(strcmp(s->nome, nome) == 0) return s->typeID; 
             s = s->prox;
         }
         aux = aux->pai;
     }
     fprintf(stderr, "ERRO SEMANTICO (Linha %d): Variavel '%s' nao declarada.\n", linha, nome);
+    qtErrosSemanticos++;
+    return T_ERROR;
 }
