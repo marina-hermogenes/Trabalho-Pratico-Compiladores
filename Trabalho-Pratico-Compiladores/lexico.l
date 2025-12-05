@@ -112,7 +112,8 @@ other       .
 "/"                     { setUltimo("DIV", yytext); coluna += yyleng; return DIV;}
 "%"                     { setUltimo("MOD", yytext); coluna += yyleng; return MOD;}
 
-{op_log}                { yylval.token.lexema = strdup(yytext); setUltimo("OP_LOGICO", yytext); coluna += yyleng; return OP_LOGICO;}
+"&&"                    { yylval.token.lexema = strdup(yytext); setUltimo("OP_AND", yytext); coluna += yyleng; return OP_AND;}
+"||"                    { yylval.token.lexema = strdup(yytext); setUltimo("OP_OR", yytext); coluna += yyleng; return OP_OR;}
 !                       { setUltimo("NOT", yytext); coluna += yyleng; return NOT;}
 "="                     { yylval.token.lexema = strdup(yytext); setUltimo("OP_ATRIBUICAO", yytext); coluna += yyleng; return OP_ATRIBUICAO;}
 {literal}               { yylval.token.lexema = strdup(yytext); setUltimo("LITERAL", yytext); coluna += yyleng; return LITERAL;}

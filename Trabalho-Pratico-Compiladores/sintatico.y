@@ -77,7 +77,9 @@
     struct {
         char* code;
         char* temp;
-        int typeID; 
+        int typeID;
+        char* labelTrue;    /* Label quando a expressão é true */
+        char* labelFalse;   /* Label quando a expressão é false */
     } expressao;
     struct {
         char* code;
@@ -94,7 +96,7 @@
 %token MAIS MENOS MULT DIV MOD
 
 %token <token> IDENTIFICADOR NUM_INTEIRO NUM_INTEIRO_NEGATIVO LITERAL TRUE FALSE
-%token <token> OP_RELACIONAL OP_LOGICO
+%token <token> OP_RELACIONAL OP_AND OP_OR
 %token <token> PRINT READ
 %type <elemento> itemPrint comando comandos while_stmt bloco declaracao print read maisDecl maisExpr
 %type <elemento> if_stmt
@@ -104,7 +106,8 @@
 /* ======== Diretivas de precedência ======== */
 /* Ordem: da menor para a maior precedência */
 %right OP_ATRIBUICAO 
-%left OP_LOGICO            
+%left OP_OR                 
+%left OP_AND                
 %left OP_RELACIONAL         
 %left MAIS MENOS               
 %left MULT DIV MOD           
@@ -225,11 +228,21 @@ atribuicao
         }
 
         $$.typeID = idType; 
-        $$.temp = strdup($1.lexema); 
+        $$.temp = strdup($1.lexema);
 
-        int size = strlen($3.code) + strlen($1.lexema) + strlen($3.temp) + 20;
-        char* code = malloc(size);
-        sprintf(code, "%s%s = %s\n", $3.code, $1.lexema, $3.temp);
+        char* code;
+        if ($3.typeID == T_BOOL && strchr($3.temp, ' ') != NULL) {
+            // É uma expressão relacional (ex: "x < 100")
+            char* t = new_nomeTemporaria();
+            int size = strlen($3.code) + strlen(t) + strlen($3.temp) + strlen($1.lexema) + 30;
+            code = malloc(size);
+            sprintf(code, "%s%s = %s\n%s = %s\n", $3.code, t, $3.temp, $1.lexema, t);
+        } else {
+            // Expressão normal (temporária ou literal)
+            int size = strlen($3.code) + strlen($1.lexema) + strlen($3.temp) + 20;
+            code = malloc(size);
+            sprintf(code, "%s%s = %s\n", $3.code, $1.lexema, $3.temp);
+        }
         $$.code = code;
     }
     ;
@@ -308,32 +321,114 @@ expr:
     }
     | expr OP_RELACIONAL expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores relacionais comparam apenas INT.\n", linha);
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores relacionais comparem apenas INT.\n", linha);
              $$.typeID = T_ERROR; qtErrosSemanticos++;
         } else {
             $$.typeID = T_BOOL;
         }
 
-        char* t = new_nomeTemporaria();
-        int size = strlen($1.code) + strlen($3.code) + 50;
+        // Armazena a expressão relacional completa em temp (para usar diretamente em if/while)
+        int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($2.lexema) + strlen($3.temp) + 50;
         char* code = malloc(size);
-        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2.lexema, $3.temp);
-        $$.code = code; $$.temp = t;
+        sprintf(code, "%s%s", $1.code, $3.code);
+        
+        char* expr_str = malloc(strlen($1.temp) + strlen($2.lexema) + strlen($3.temp) + 20);
+        sprintf(expr_str, "%s %s %s", $1.temp, $2.lexema, $3.temp);
+        
+        $$.code = code;
+        $$.temp = expr_str;  // Armazena a expressão completa
     }
-    | expr OP_LOGICO expr {
+    | expr OP_AND expr {
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
-             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores logicos requerem operandos BOOL.\n", linha);
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador && requer operandos BOOL.\n", linha);
+             $$.typeID = T_ERROR; qtErrosSemanticos++;
+        } else {
+            $$.typeID = T_BOOL;
+        }
+        
+        char* Lfalse = newLabel();
+        
+        int size_code = strlen($1.code) + strlen($1.temp) + strlen(Lfalse);
+        
+        // Se B tem seus próprios labels, apenas concatenar
+        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+            // B já gera seus próprios desvios
+            size_code += strlen($3.code) + 100;
+        } else {
+            // B é simples - gerar ifFalse para ele
+            size_code += strlen($3.code) + strlen($3.temp) + strlen(Lfalse) + 50;
+        }
+        
+        char* code = malloc(size_code);
+        
+        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+            // B tem labels próprios - só redirecionar o labelFalse
+            sprintf(code, "%s"                           
+                          "ifFalse %s goto %s\n"      
+                          "%s",                           
+                    $1.code, $1.temp, Lfalse,
+                    $3.code);
+        } else {
+            // B é simples
+            sprintf(code, "%s"                           
+                          "ifFalse %s goto %s\n"      
+                          "%s"                          
+                          "ifFalse %s goto %s\n",      
+                    $1.code, $1.temp, Lfalse,
+                    $3.code, $3.temp, Lfalse);
+        }
+        
+        $$.code = code;
+        $$.temp = $3.temp;
+        $$.labelTrue = NULL;
+        $$.labelFalse = Lfalse;
+    }
+    | expr OP_OR expr {
+        if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
+             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador || requer operandos BOOL.\n", linha);
              $$.typeID = T_ERROR; qtErrosSemanticos++;
         } else {
             $$.typeID = T_BOOL;
         }
 
-        char* t = new_nomeTemporaria();
-        int size = strlen($1.code) + strlen($3.code) + 50;
-        char* code = malloc(size);
-        sprintf(code, "%s%s%s = %s %s %s\n", $1.code, $3.code, t, $1.temp, $2.lexema, $3.temp);
-        $$.code = code; $$.temp = t;
-     }
+        // OR com curto-circuito: A || B
+        // Se A é true, pula para o final (resultado é true)
+        // Se A é false, avalia B
+        
+        char* Ltrue = newLabel();
+        
+        int size_code = strlen($1.code) + strlen($1.temp) + strlen(Ltrue);
+        
+        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+            size_code += strlen($3.code) + 100;
+        } else {
+            size_code += strlen($3.code) + strlen($3.temp) + strlen(Ltrue) + 50;
+        }
+        
+        char* code = malloc(size_code);
+        
+        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+            // B tem labels próprios
+            sprintf(code, "%s"                          
+                          "if %s goto %s\n"           
+                          "%s",                          
+                    $1.code, $1.temp, Ltrue,
+                    $3.code);
+        } else {
+            // B é simples
+            sprintf(code, "%s"                           
+                          "if %s goto %s\n"           
+                          "%s"                           
+                          "if %s goto %s\n",          
+                    $1.code, $1.temp, Ltrue,
+                    $3.code, $3.temp, Ltrue);
+        }
+        
+        $$.code = code;
+        $$.temp = $3.temp;
+        $$.labelTrue = Ltrue;
+        $$.labelFalse = $3.labelFalse;  // Passar o labelFalse do operando direito (se existir)
+    }
     | NOT expr {
         if ($2.typeID != T_BOOL) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '!' requer operando BOOL.\n", linha);
@@ -416,49 +511,73 @@ while_stmt
              qtErrosSemanticos++;
         }
 
-        // Linicio
         char *Linicio = newLabel();
-        int size1 = strlen(Linicio) + 5;
-        char* code1 = malloc(size1);
-        sprintf(code1, "\n%s:\n", Linicio);
-
-        // Quando a condição é verdadeira
-        char *Lcodigo = newLabel();
-        int size2 = strlen($3.code) + strlen($3.temp) + strlen(Lcodigo) + 20;
-        char* code2 = malloc(size2);
-        sprintf(code2, "%sif %s goto %s\n", $3.code, $3.temp, Lcodigo);
-
-        // Código para a condição verdadeira é gerado
-        int size3 = strlen(Lcodigo) + 20;
-        char* code3 = malloc(size3);
-        sprintf(code3, "\n%s:\n", Lcodigo);
-        int size4 = strlen(Linicio) + 20;
-        char* code4 = malloc(size4);
-        sprintf(code4, "goto %s\n", Linicio);
-
-        // Label para a condição falsa
-        char *Lfim = newLabel();
-        int size6 = strlen(Lfim) + 20;
-        char* code6 = malloc(size6);
-        sprintf(code6, "\n%s:\n", Lfim);
-
-        // Quando a condição é falsa
-        int size7 = strlen(Lfim) + 20;
-        char* code7 = malloc(size3);
-        sprintf(code7, "goto %s\n", Lfim);
-
-        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen(code4) + strlen($5.code) + strlen(code6) + strlen(code7) + 100;
-        char* code = malloc(size);
-        sprintf(code, "%s%s%s%s%s%s%s", code1, code2, code7, code3, $5.code, code4, code6);
-        $$.code = code;
+        
+        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+            int size = strlen(Linicio) + strlen($3.code) + strlen($5.code) + strlen(Linicio) + 100;
+            if ($3.labelTrue != NULL) size += strlen($3.labelTrue);
+            if ($3.labelFalse != NULL) size += strlen($3.labelFalse);
+            
+            char* code = malloc(size);
+            
+            if ($3.labelTrue != NULL && $3.labelFalse == NULL) {
+                sprintf(code, "\n%s:\n"         // Linicio:
+                              "%s"              // Código da expressão
+                              "%s:\n"           // labelTrue:
+                              "%s"              // Corpo do while
+                              "goto %s\n",      // goto Linicio
+                        Linicio,
+                        $3.code, $3.labelTrue,
+                        $5.code, Linicio);
+            } else if ($3.labelTrue == NULL && $3.labelFalse != NULL) {
+                sprintf(code, "\n%s:\n"         // Linicio:
+                              "%s"              // Código da expressão
+                              "%s"              // Corpo do while (labelTrue implícito)
+                              "goto %s\n"       // goto Linicio
+                              "%s:\n",          // labelFalse:
+                        Linicio,
+                        $3.code,
+                        $5.code, Linicio,
+                        $3.labelFalse);
+            } else {
+                sprintf(code, "\n%s:\n"         // Linicio:
+                              "%s"              // Código da expressão
+                              "%s:\n"           // labelTrue:
+                              "%s"              // Corpo do while
+                              "goto %s\n"       // goto Linicio
+                              "%s:\n",          // labelFalse:
+                        Linicio,
+                        $3.code, $3.labelTrue,
+                        $5.code, Linicio,
+                        $3.labelFalse);
+            }
+            
+            $$.code = code;
+        } else {
+            char *Lfim = newLabel();
+            int size = strlen(Linicio) + strlen($3.code) + strlen($3.temp) + strlen($5.code) + strlen(Linicio) + strlen(Lfim) + 100;
+            char* code = malloc(size);
+            
+            sprintf(code, "\n%s:\n"              // Linicio:
+                          "%s"                  // Código da expressão
+                          "ifFalse %s goto %s\n" // ifFalse condição goto Lfim
+                          "%s"                  // Corpo do while
+                          "goto %s\n"           // goto Linicio
+                          "%s:\n",              // Lfim:
+                    Linicio,
+                    $3.code, $3.temp, Lfim,
+                    $5.code, Linicio,
+                    Lfim);
+            
+            $$.code = code;
+        }
     }
-    | WHILE error PONTO_E_VIRGULA { // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
+    | WHILE error PONTO_E_VIRGULA {
         fprintf(stderr, "Erro na formatação do WHILE. Sincronizando com ';'.\n");
         yyerrok;
       }
     ;
 
-// estrutura condicional if (com e sem else)
 if_stmt
     : IF ABRE_PARENTESES expr FECHA_PARENTESES comando ELSE comando {
         if ($3.typeID != T_BOOL && $3.typeID != T_ERROR) {
@@ -467,48 +586,71 @@ if_stmt
              qtErrosSemanticos++;
         }
 
-        char *Linicio = newLabel();
-        char *Lcodigo = newLabel();
+        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+            char *Lfim = newLabel();
+            
+            int size = strlen($3.code) + 50;
+            if ($3.labelTrue != NULL) size += strlen($3.labelTrue) + strlen($5.code) + 30;
+            if ($3.labelFalse != NULL) size += strlen($3.labelFalse) + strlen($7.code) + 30;
+            size += strlen(Lfim) + 20;
+            
+            char* code = malloc(size);
+            
+            if ($3.labelTrue != NULL && $3.labelFalse != NULL) {
+                sprintf(code, "%s"                       // Código da expressão
+                              "%s:\n"                    // labelTrue:
+                              "%s"                       // Corpo do if
+                              "goto %s\n"                // goto Lfim
+                              "%s:\n"                    // labelFalse:
+                              "%s"                       // Corpo do else
+                              "\n%s:\n",                 // Lfim:
+                        $3.code, $3.labelTrue,
+                        $5.code, Lfim,
+                        $3.labelFalse, $7.code, Lfim);
+            } else if ($3.labelTrue != NULL) {
+                sprintf(code, "%s"                       // Código da expressão
+                              "%s:\n"                    // labelTrue:
+                              "%s"                       // Corpo do if
+                              "goto %s\n"                // goto Lfim
+                              "%s"                       // Corpo do else (labelFalse implícito)
+                              "\n%s:\n",                 // Lfim:
+                        $3.code, $3.labelTrue,
+                        $5.code, Lfim,
+                        $7.code, Lfim);
+            } else {
+                sprintf(code, "%s"                       // Código da expressão
+                              "%s"                       // Corpo do if (labelTrue implícito)
+                              "goto %s\n"                // goto Lfim
+                              "%s:\n"                    // labelFalse:
+                              "%s"                       // Corpo do else
+                              "\n%s:\n",                 // Lfim:
+                        $3.code,
+                        $5.code, Lfim,
+                        $3.labelFalse, $7.code, Lfim);
+            }
+            
+            $$.code = code;
+        } else {
+            char *Ltrue = newLabel();
+            char *Lfim = newLabel();
 
-        // Condição 
-        int size1 = strlen($3.temp) + strlen($3.code) + strlen(Lcodigo) + 20;
-        char* code1 = malloc(size1);
-        sprintf(code1, "%sIF %s goto %s\n", $3.code, $3.temp, Lcodigo);
-
-        // Código da condição verdadeira
-        int size3 = strlen(Lcodigo) + 20;
-        char* code3 = malloc(size3);
-        sprintf(code3, "\n%s:\n", Lcodigo);
-
-        // Código da condição falsa
-        char *Lfalso = newLabel();
-        int size5 = strlen(Lfalso) + 5;
-        char* code5 = malloc(size5);
-        sprintf(code5, "\n%s:\n", Lfalso);
-
-        // Condição falsa
-        int size2 = strlen(Lfalso) + 20;
-        char* code2 = malloc(size2);
-        sprintf(code2, "goto %s\n", Lfalso);
-
-        // Fim do if/else
-        char *Lfim = newLabel();
-        int size7 = strlen(Lfim) + 20;
-        char* code7 = malloc(size7);
-        sprintf(code7, "\n%s:\n", Lfim);
-
-        int size6 = strlen(Lfim) + 10;
-        char* code6 = malloc(size6);
-        sprintf(code6, "goto %s\n", Lfim);
-
-        int size4 = strlen(Lfim) + 10;
-        char* code4 = malloc(size4);
-        sprintf(code4, "goto %s\n", Lfim);
-
-        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5.code) + strlen(code4) + strlen($7.code) + strlen(code5) + strlen(code6) + strlen(code7) + 100;
-        char* code = malloc(size);
-        sprintf(code, "%s%s%s%s%s%s%s%s%s", code1, code2, code3, $5.code, code4, code5, $7.code, code6, code7);
-        $$.code = code;
+            int size = strlen($3.code) + strlen(Ltrue) + strlen($3.temp) + strlen($5.code) + 
+                       strlen($7.code) + strlen(Lfim) + 100;
+            char* code = malloc(size);
+            
+            sprintf(code, "%s"                           // Código da expressão
+                          "if %s goto %s\n"             // if condição goto Ltrue
+                          "%s"                           // Corpo do else
+                          "goto %s\n"                    // goto Lfim
+                          "%s:\n"                        // Ltrue:
+                          "%s"                           // Corpo do if
+                          "\n%s:\n",                     // Lfim:
+                    $3.code, $3.temp, Ltrue,
+                    $7.code, Lfim,
+                    Ltrue, $5.code, Lfim);
+            
+            $$.code = code;
+        }
     }
     | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE {
         if ($3.typeID != T_BOOL && $3.typeID != T_ERROR) {
@@ -517,38 +659,43 @@ if_stmt
              qtErrosSemanticos++;
         }
 
-        char *Linicio = newLabel();
-        char *Lcodigo = newLabel();
-
-        // Condição
-        int size1 = strlen($3.temp) + strlen($3.code) + strlen(Lcodigo) + 20;
-        char* code1 = malloc(size1);
-        sprintf(code1, "%sIF %s goto %s\n", $3.code, $3.temp, Lcodigo);
-
-        // Código da condição verdadeira
-        int size3 = strlen(Lcodigo) + 20;
-        char* code3 = malloc(size3);
-        sprintf(code3, "\n%s:\n", Lcodigo);
-
-        // Fim do if
-        char *Lfim = newLabel();
-        int size5 = strlen(Lfim) + 20;
-        char* code5 = malloc(size5);
-        sprintf(code5, "\n%s:\n", Lfim);
-
-        // Condição falsa
-        int size2 = strlen(Lfim) + 20;
-        char* code2 = malloc(size2);
-        sprintf(code2, "goto %s\n", Lfim);
-
-        int size4 = strlen(Lfim) + 10;
-        char* code4 = malloc(size4);
-        sprintf(code4, "goto %s\n", Lfim);
-
-        int size = strlen(code1) + strlen(code2) + strlen(code3) + strlen($5.code) + strlen(code4) + strlen(code5) + 100;
-        char* code = malloc(size);
-        sprintf(code, "%s%s%s%s%s%s", code1, code2, code3, $5.code, code4, code5);
-        $$.code = code;
+        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+            int size = strlen($3.code) + strlen($5.code) + 100;
+            if ($3.labelTrue != NULL) size += strlen($3.labelTrue);
+            if ($3.labelFalse != NULL) size += strlen($3.labelFalse);
+            
+            char* code = malloc(size);
+            strcpy(code, $3.code);
+            
+            if ($3.labelTrue != NULL) {
+                strcat(code, $3.labelTrue);
+                strcat(code, ":\n");
+            }
+            
+            strcat(code, $5.code);
+            
+            if ($3.labelFalse != NULL) {
+                strcat(code, "\n");
+                strcat(code, $3.labelFalse);
+                strcat(code, ":\n");
+            }
+            
+            $$.code = code;
+        } else {
+            char *Lfim = newLabel();
+            
+            int size = strlen($3.code) + strlen($3.temp) + strlen($5.code) + strlen(Lfim) + 50;
+            char* code = malloc(size);
+            
+            sprintf(code, "%s"                           // Código da expressão
+                          "ifFalse %s goto %s\n"        // ifFalse condição goto Lfim
+                          "%s"                           // Corpo do if
+                          "\n%s:\n",                     // Lfim:
+                    $3.code, $3.temp, Lfim,
+                    $5.code, Lfim);
+            
+            $$.code = code;
+        }
     }
     | IF error PONTO_E_VIRGULA { // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         fprintf(stderr, "Erro na formatação do IF. Sincronizando com ';'.\n");
