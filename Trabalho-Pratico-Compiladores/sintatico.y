@@ -10,7 +10,8 @@
     extern void imprimirTabela();
 
     int qtErrosSintaticos = 0;
-    int qtErrosSemanticos = 0; 
+    int qtErrosSemanticos = 0;
+    int inAssignmentContext = 0;  /* Flag para marcar quando está em contexto de atribuição */
 
     int yylex(void);
     void yyerror(const char *s);
@@ -207,20 +208,21 @@ tipo
 
 // atribuição de uma expressão a um ou mais identificadores
 atribuicao
-    : IDENTIFICADOR OP_ATRIBUICAO expr {
+    : IDENTIFICADOR OP_ATRIBUICAO { inAssignmentContext = 1; } expr {
+        inAssignmentContext = 0;  /* Reset flag */
         int idType = T_ERROR;
         if (tipoAtualID == T_ERROR) {
              idType = getTipoSimbolo($1.lexema); 
-             if (idType != T_ERROR && $3.typeID != T_ERROR && idType != $3.typeID) {
+             if (idType != T_ERROR && $4.typeID != T_ERROR && idType != $4.typeID) {
                  fprintf(stderr, "ERRO SEMANTICO (Linha %d): Atribuicao incompativel. '%s' eh %s, mas recebeu %s.\n",
-                    linha, $1.lexema, getNomeTipo(idType), getNomeTipo($3.typeID));
+                    linha, $1.lexema, getNomeTipo(idType), getNomeTipo($4.typeID));
                  qtErrosSemanticos++;
              }
         } else {
              idType = tipoAtualID;
-             if ($3.typeID != T_ERROR && $3.typeID != idType) {
+             if ($4.typeID != T_ERROR && $4.typeID != idType) {
                 fprintf(stderr, "ERRO SEMANTICO (Linha %d): Inicializacao invalida. Esperado %s, encontrado %s.\n", 
-                        linha, getNomeTipo(idType), getNomeTipo($3.typeID));
+                        linha, getNomeTipo(idType), getNomeTipo($4.typeID));
                 qtErrosSemanticos++;
              }
 
@@ -231,17 +233,17 @@ atribuicao
         $$.temp = strdup($1.lexema);
 
         char* code;
-        if ($3.typeID == T_BOOL && strchr($3.temp, ' ') != NULL) {
+        if ($4.typeID == T_BOOL && strchr($4.temp, ' ') != NULL) {
             // É uma expressão relacional (ex: "x < 100")
             char* t = new_nomeTemporaria();
-            int size = strlen($3.code) + strlen(t) + strlen($3.temp) + strlen($1.lexema) + 30;
+            int size = strlen($4.code) + strlen(t) + strlen($4.temp) + strlen($1.lexema) + 30;
             code = malloc(size);
-            sprintf(code, "%s%s = %s\n%s = %s\n", $3.code, t, $3.temp, $1.lexema, t);
+            sprintf(code, "%s%s = %s\n%s = %s\n", $4.code, t, $4.temp, $1.lexema, t);
         } else {
             // Expressão normal (temporária ou literal)
-            int size = strlen($3.code) + strlen($1.lexema) + strlen($3.temp) + 20;
+            int size = strlen($4.code) + strlen($1.lexema) + strlen($4.temp) + 20;
             code = malloc(size);
-            sprintf(code, "%s%s = %s\n", $3.code, $1.lexema, $3.temp);
+            sprintf(code, "%s%s = %s\n", $4.code, $1.lexema, $4.temp);
         }
         $$.code = code;
     }
@@ -346,42 +348,55 @@ expr:
             $$.typeID = T_BOOL;
         }
         
-        char* Lfalse = newLabel();
-        
-        int size_code = strlen($1.code) + strlen($1.temp) + strlen(Lfalse);
-        
-        // Se B tem seus próprios labels, apenas concatenar
-        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-            // B já gera seus próprios desvios
-            size_code += strlen($3.code) + 100;
+        /* Se estamos em contexto de atribuição, gera código de 3 endereços simples */
+        if (inAssignmentContext) {
+            char* t = new_nomeTemporaria();
+            int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
+            char* code = malloc(size);
+            sprintf(code, "%s%s%s = %s && %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+            $$.code = code;
+            $$.temp = t;
+            $$.labelTrue = NULL;
+            $$.labelFalse = NULL;
         } else {
-            // B é simples - gerar ifFalse para ele
-            size_code += strlen($3.code) + strlen($3.temp) + strlen(Lfalse) + 50;
+            /* Contexto de controle de fluxo: mantém lógica de curto-circuito */
+            char* Lfalse = newLabel();
+            
+            int size_code = strlen($1.code) + strlen($1.temp) + strlen(Lfalse);
+            
+            // Se B tem seus próprios labels, apenas concatenar
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B já gera seus próprios desvios
+                size_code += strlen($3.code) + 100;
+            } else {
+                // B é simples - gerar ifFalse para ele
+                size_code += strlen($3.code) + strlen($3.temp) + strlen(Lfalse) + 50;
+            }
+            
+            char* code = malloc(size_code);
+            
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B tem labels próprios - só redirecionar o labelFalse
+                sprintf(code, "%s"                           
+                              "ifFalse %s goto %s\n"      
+                              "%s",                           
+                        $1.code, $1.temp, Lfalse,
+                        $3.code);
+            } else {
+                // B é simples
+                sprintf(code, "%s"                           
+                              "ifFalse %s goto %s\n"      
+                              "%s"                          
+                              "ifFalse %s goto %s\n",      
+                        $1.code, $1.temp, Lfalse,
+                        $3.code, $3.temp, Lfalse);
+            }
+            
+            $$.code = code;
+            $$.temp = $3.temp;
+            $$.labelTrue = NULL;
+            $$.labelFalse = Lfalse;
         }
-        
-        char* code = malloc(size_code);
-        
-        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-            // B tem labels próprios - só redirecionar o labelFalse
-            sprintf(code, "%s"                           
-                          "ifFalse %s goto %s\n"      
-                          "%s",                           
-                    $1.code, $1.temp, Lfalse,
-                    $3.code);
-        } else {
-            // B é simples
-            sprintf(code, "%s"                           
-                          "ifFalse %s goto %s\n"      
-                          "%s"                          
-                          "ifFalse %s goto %s\n",      
-                    $1.code, $1.temp, Lfalse,
-                    $3.code, $3.temp, Lfalse);
-        }
-        
-        $$.code = code;
-        $$.temp = $3.temp;
-        $$.labelTrue = NULL;
-        $$.labelFalse = Lfalse;
     }
     | expr OP_OR expr {
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
@@ -391,43 +406,56 @@ expr:
             $$.typeID = T_BOOL;
         }
 
-        // OR com curto-circuito: A || B
-        // Se A é true, pula para o final (resultado é true)
-        // Se A é false, avalia B
-        
-        char* Ltrue = newLabel();
-        
-        int size_code = strlen($1.code) + strlen($1.temp) + strlen(Ltrue);
-        
-        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-            size_code += strlen($3.code) + 100;
+        /* Se está em contexto de atribuição, gera código de 3 endereços simples */
+        if (inAssignmentContext) {
+            char* t = new_nomeTemporaria();
+            int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
+            char* code = malloc(size);
+            sprintf(code, "%s%s%s = %s || %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+            $$.code = code;
+            $$.temp = t;
+            $$.labelTrue = NULL;
+            $$.labelFalse = NULL;
         } else {
-            size_code += strlen($3.code) + strlen($3.temp) + strlen(Ltrue) + 50;
+            /* Contexto de controle de fluxo: mantém lógica de curto-circuito */
+            // OR com curto-circuito: A || B
+            // Se A é true, pula para o final (resultado é true)
+            // Se A é false, avalia B
+            
+            char* Ltrue = newLabel();
+            
+            int size_code = strlen($1.code) + strlen($1.temp) + strlen(Ltrue);
+            
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                size_code += strlen($3.code) + 100;
+            } else {
+                size_code += strlen($3.code) + strlen($3.temp) + strlen(Ltrue) + 50;
+            }
+            
+            char* code = malloc(size_code);
+            
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B tem labels próprios
+                sprintf(code, "%s"                          
+                              "if %s goto %s\n"           
+                              "%s",                          
+                        $1.code, $1.temp, Ltrue,
+                        $3.code);
+            } else {
+                // B é simples
+                sprintf(code, "%s"                           
+                              "if %s goto %s\n"           
+                              "%s"                           
+                              "if %s goto %s\n",          
+                        $1.code, $1.temp, Ltrue,
+                        $3.code, $3.temp, Ltrue);
+            }
+            
+            $$.code = code;
+            $$.temp = $3.temp;
+            $$.labelTrue = Ltrue;
+            $$.labelFalse = $3.labelFalse;  // Passar o labelFalse do operando direito (se existir)
         }
-        
-        char* code = malloc(size_code);
-        
-        if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-            // B tem labels próprios
-            sprintf(code, "%s"                          
-                          "if %s goto %s\n"           
-                          "%s",                          
-                    $1.code, $1.temp, Ltrue,
-                    $3.code);
-        } else {
-            // B é simples
-            sprintf(code, "%s"                           
-                          "if %s goto %s\n"           
-                          "%s"                           
-                          "if %s goto %s\n",          
-                    $1.code, $1.temp, Ltrue,
-                    $3.code, $3.temp, Ltrue);
-        }
-        
-        $$.code = code;
-        $$.temp = $3.temp;
-        $$.labelTrue = Ltrue;
-        $$.labelFalse = $3.labelFalse;  // Passar o labelFalse do operando direito (se existir)
     }
     | NOT expr {
         if ($2.typeID != T_BOOL) {
@@ -437,11 +465,25 @@ expr:
             $$.typeID = T_BOOL;
         }
 
-        char* t = new_nomeTemporaria();
-        int size = strlen($2.code) + 50;
-        char* code = malloc(size);
-        sprintf(code, "%s%s + NOT %s\n", $2.code, t, $2.temp);
-        $$.code = code; $$.temp = t;
+        /* Detecta se expr é uma expressão relacional */
+        if (strchr($2.temp, ' ') != NULL) {
+            /* Expressão relacional: gerar em duas instruções */
+            char* t_temp = new_nomeTemporaria();
+            char* t = new_nomeTemporaria();
+            int size = strlen($2.code) + strlen(t_temp) + strlen($2.temp) + strlen(t) + 100;
+            char* code = malloc(size);
+            sprintf(code, "%s%s = %s\n%s = NOT %s\n", $2.code, t_temp, $2.temp, t, t_temp);
+            $$.code = code;
+            $$.temp = t;
+        } else {
+            /* Operando simples ou temporário: aplicar NOT direto */
+            char* t = new_nomeTemporaria();
+            int size = strlen($2.code) + strlen(t) + strlen($2.temp) + 50;
+            char* code = malloc(size);
+            sprintf(code, "%s%s = NOT %s\n", $2.code, t, $2.temp);
+            $$.code = code;
+            $$.temp = t;
+        }
     }
     | MENOS expr %prec UMINUS {
         if ($2.typeID != T_INT) {
@@ -454,7 +496,7 @@ expr:
         char* t = new_nomeTemporaria();
         int size = strlen($2.code) + 50;
         char* code = malloc(size);
-        sprintf(code, "%s%s + MINUS %s\n", $2.code, t, $2.temp);
+        sprintf(code, "%s%s = MINUS %s\n", $2.code, t, $2.temp);
         $$.code = code; $$.temp = t;
     }
     | ABRE_PARENTESES expr FECHA_PARENTESES {
