@@ -323,22 +323,45 @@ expr:
     }
     | expr OP_RELACIONAL expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores relacionais comparem apenas INT.\n", linha);
-             $$.typeID = T_ERROR; qtErrosSemanticos++;
-        } else {
-            $$.typeID = T_BOOL;
-        }
+         fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores relacionais comparem apenas INT.\n", linha);
+         $$.typeID = T_ERROR; qtErrosSemanticos++;
+    } else {
+        $$.typeID = T_BOOL;
+    }
 
-        // Armazena a expressão relacional completa em temp (para usar diretamente em if/while)
-        int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($2.lexema) + strlen($3.temp) + 50;
+    /* ======== CASO 1: contexto de atribuição (SEM curto-circuito) ======== */
+    if (inAssignmentContext) {
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) +
+                   strlen(t) + strlen($1.temp) + strlen($3.temp) +
+                   strlen($2.lexema) + 50;
+
         char* code = malloc(size);
-        sprintf(code, "%s%s", $1.code, $3.code);
-        
-        char* expr_str = malloc(strlen($1.temp) + strlen($2.lexema) + strlen($3.temp) + 20);
-        sprintf(expr_str, "%s %s %s", $1.temp, $2.lexema, $3.temp);
-        
+        sprintf(code, "%s%s%s = %s %s %s\n",
+                $1.code, $3.code,
+                t, $1.temp, $2.lexema, $3.temp);
+
         $$.code = code;
-        $$.temp = expr_str;  // Armazena a expressão completa
+        $$.temp = t;
+        $$.labelTrue = NULL;
+        $$.labelFalse = NULL;
+    }
+
+    /* ======== CASO 2: CONTEXTO DE CONTROLE (curto-circuito) ======== */
+        else {
+            int size = strlen($1.code) + strlen($3.code) + 10;
+            char* code = malloc(size);
+            sprintf(code, "%s%s", $1.code, $3.code);
+
+            // temp guarda o texto da comparação para uso em if/while
+            char* expr_str = malloc(strlen($1.temp) + strlen($2.lexema) + strlen($3.temp) + 10);
+            sprintf(expr_str, "%s %s %s", $1.temp, $2.lexema, $3.temp);
+
+            $$.code = code;
+            $$.temp = expr_str;
+            $$.labelTrue = NULL;
+            $$.labelFalse = NULL;
+        }
     }
     | expr OP_AND expr {
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
