@@ -3,6 +3,7 @@
     #include <stdlib.h>
     #include <string.h> 
     #include <stdbool.h>
+    #include <stdarg.h>  
 
     extern int linha;
     extern int coluna;
@@ -72,7 +73,8 @@
     void pushEscopo();
     void popEscopo();
     void declararSimbolo(char *nome);
-    int getTipoSimbolo(char *nome); 
+    int getTipoSimbolo(char *nome);
+    void lancaErroSemantico(const char *fmt, ...); 
 
     char* replaceLabel(char* code, char* oldLabel, char* newLabel) {
     if (oldLabel == NULL || newLabel == NULL || code == NULL) {
@@ -252,18 +254,12 @@ atribuicao
         if (tipoAtualID == T_ERROR) {
              idType = getTipoSimbolo($1.lexema); 
              if (idType != T_ERROR && $4.typeID != T_ERROR && idType != $4.typeID) {
-                 fprintf(stderr, "ERRO SEMANTICO (Linha %d): Atribuicao incompativel. '%s' eh %s, mas recebeu %s.\n",
-                    linha, $1.lexema, getNomeTipo(idType), getNomeTipo($4.typeID));
-                 qtErrosSemanticos++;
-                 erro = true;
+                    lancaErroSemantico("Atribuicao incompativel. '%s' eh %s, mas recebeu %s.",$1.lexema, getNomeTipo(idType), getNomeTipo($4.typeID));
              }
         } else {
              idType = tipoAtualID;
              if ($4.typeID != T_ERROR && $4.typeID != idType) {
-                fprintf(stderr, "ERRO SEMANTICO (Linha %d): Inicializacao invalida. Esperado %s, encontrado %s.\n", 
-                        linha, getNomeTipo(idType), getNomeTipo($4.typeID));
-                qtErrosSemanticos++;
-                erro = true;
+                    lancaErroSemantico("Inicializacao invalida. Esperado %s, encontrado %s.", getNomeTipo(idType), getNomeTipo($4.typeID));
              }
 
              declararSimbolo($1.lexema);
@@ -293,9 +289,7 @@ atribuicao
 expr:
       expr MAIS expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '+' requer operandos INT.\n", linha);
-            $$.typeID = T_ERROR; qtErrosSemanticos++;
-            erro = true;
+            lancaErroSemantico("Operador '+' requer operandos INT.");
         } else {
             $$.typeID = T_INT;
         }
@@ -308,9 +302,7 @@ expr:
     }
     | expr MENOS expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '-' requer operandos INT.\n", linha);
-            $$.typeID = T_ERROR; qtErrosSemanticos++;
-            erro = true;
+            lancaErroSemantico("Operador '-' requer operandos INT.");
         } else {
             $$.typeID = T_INT;
         }
@@ -323,9 +315,7 @@ expr:
     }
     | expr MULT expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '*' requer operandos INT.\n", linha);
-            $$.typeID = T_ERROR; qtErrosSemanticos++;
-            erro = true;
+            lancaErroSemantico("Operador '*' requer operandos INT.");
         } else {
             $$.typeID = T_INT;
         }
@@ -338,9 +328,7 @@ expr:
     }
     | expr DIV expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '/' requer operandos INT.\n", linha);
-            $$.typeID = T_ERROR; qtErrosSemanticos++;
-            erro = true;
+           lancaErroSemantico("Operador '/' requer operandos INT.");
         } else {
             $$.typeID = T_INT;
         }
@@ -353,9 +341,7 @@ expr:
     }
     | expr MOD expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '%%' requer operandos INT.\n", linha);
-            $$.typeID = T_ERROR; qtErrosSemanticos++;
-            erro = true;
+            lancaErroSemantico("Operador '%' requer operandos INT.");
         } else {
             $$.typeID = T_INT;
         }
@@ -368,12 +354,10 @@ expr:
     }
     | expr OP_RELACIONAL expr {
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
-         fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores relacionais comparem apenas INT.\n", linha);
-         $$.typeID = T_ERROR; qtErrosSemanticos++;
-         erro = true;
-    } else {
-        $$.typeID = T_BOOL;
-    }
+            lancaErroSemantico("Operadores relacionais comparam apenas INT.");
+        } else {
+            $$.typeID = T_BOOL;
+    }   
 
     /* ======== CASO 1: contexto de atribuição (SEM curto-circuito) ======== */
     if (inAssignmentContext) {
@@ -411,12 +395,10 @@ expr:
     }
     | expr OP_AND expr {
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
-             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador && requer operandos BOOL.\n", linha);
-             $$.typeID = T_ERROR; qtErrosSemanticos++;
-             erro = true;
+            lancaErroSemantico("Operador && requer operandos BOOL.");
         } else {
             $$.typeID = T_BOOL;
-        }
+            }
         
         /* Se estamos em contexto de atribuição, gera código de 3 endereços simples */
         if (inAssignmentContext) {
@@ -517,9 +499,7 @@ expr:
     
     | expr OP_OR expr {
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
-             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador || requer operandos BOOL.\n", linha);
-             $$.typeID = T_ERROR; qtErrosSemanticos++;
-             erro = true;
+            lancaErroSemantico("Operador || requer operandos BOOL.");
         } else {
             $$.typeID = T_BOOL;
         }
@@ -678,9 +658,7 @@ expr:
     }
     | NOT expr {
         if ($2.typeID != T_BOOL) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '!' requer operando BOOL.\n", linha);
-            $$.typeID = T_ERROR; qtErrosSemanticos++;
-            erro = true;
+            lancaErroSemantico("Operador '!' requer operando BOOL.");
         } else {
             $$.typeID = T_BOOL;
         }
@@ -707,9 +685,7 @@ expr:
     }
     | MENOS expr %prec UMINUS {
         if ($2.typeID != T_INT) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Menos unario requer operando INT.\n", linha);
-            $$.typeID = T_ERROR; qtErrosSemanticos++;
-            erro = true;
+            lancaErroSemantico("Menos unario requer operando INT.");
         } else {
             $$.typeID = T_INT;
         }
@@ -769,10 +745,7 @@ bloco
 while_stmt
     : WHILE ABRE_PARENTESES expr FECHA_PARENTESES comando {
         if ($3.typeID != T_BOOL && $3.typeID != T_ERROR) {
-             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do WHILE deve ser BOOL. Encontrado: %s\n", 
-                linha, getNomeTipo($3.typeID));
-             qtErrosSemanticos++;
-             erro = true;
+            lancaErroSemantico("Condicao do WHILE deve ser BOOL. Encontrado: %s", getNomeTipo($3.typeID));
         }
 
         char *Linicio = newLabel();
@@ -920,10 +893,7 @@ if_stmt
     }
     | IF ABRE_PARENTESES expr FECHA_PARENTESES comando %prec IF_SEM_ELSE {
         if ($3.typeID != T_BOOL && $3.typeID != T_ERROR) {
-             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do IF deve ser BOOL. Encontrado: %s\n", 
-                linha, getNomeTipo($3.typeID));
-             qtErrosSemanticos++;
-             erro = true;
+            lancaErroSemantico("Condicao do IF deve ser BOOL. Encontrado: %s", getNomeTipo($3.typeID));
         }
 
         if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
@@ -1045,6 +1015,30 @@ void yyerror(const char *s) {
     }
 }
 
+void lancaErroSemantico(const char *fmt, ...) {
+
+    va_list args;
+    extern int linha;
+    extern int coluna;
+    
+    /* Inicia o processamento dos argumentos variáveis */
+    va_start(args, fmt);
+    
+    /* Imprime o cabeçalho padrão */
+    fprintf(stderr, "Erro semântico na linha %d, coluna %d: ", linha, coluna);
+    
+    /* Imprime a mensagem formatada (ex: "Tipo X incompativel com Y") */
+    vfprintf(stderr, fmt, args);
+    
+    /* Finaliza a linha */
+    fprintf(stderr, "\n");
+    
+    va_end(args);
+    
+    qtErrosSemanticos++;
+    erro = true;
+}
+
 /* ======== Função principal ======== */
 int main(void) {
     yyparse();
@@ -1096,8 +1090,7 @@ void declararSimbolo(char *nome) {
     Simbolo *s = escopoAtual->lista;
     while(s) {
         if(strcmp(s->nome, nome) == 0) {
-            fprintf(stderr, "ERRO SEMANTICO (Linha %d): Redeclaracao de '%s'.\n", linha, nome);
-            qtErrosSemanticos++;
+            lancaErroSemantico("Redeclaracao de '%s'.", nome);
             return;
         }
         s = s->prox;
@@ -1121,8 +1114,7 @@ int getTipoSimbolo(char *nome) {
             s = s->prox;
         }
         aux = aux->pai;
-    }
-    fprintf(stderr, "ERRO SEMANTICO (Linha %d): Variavel '%s' nao declarada.\n", linha, nome);
-    qtErrosSemanticos++;
+    }   
+    lancaErroSemantico("Variavel '%s' nao declarada.", nome);
     return T_ERROR;
 }
