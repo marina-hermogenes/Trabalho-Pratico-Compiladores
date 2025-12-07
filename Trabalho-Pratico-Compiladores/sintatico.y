@@ -2,6 +2,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h> 
+    #include <stdbool.h>
 
     extern int linha;
     extern int coluna;
@@ -12,6 +13,7 @@
     int qtErrosSintaticos = 0;
     int qtErrosSemanticos = 0;
     int inAssignmentContext = 0;  /* Flag para marcar quando está em contexto de atribuição */
+    bool erro = false;
 
     int yylex(void);
     void yyerror(const char *s);
@@ -41,9 +43,11 @@
     }
 
     void c3e_gen(const char* instr) {
-        FILE *f = fopen("c3e.txt", "a");
-        fprintf(f, "%s", instr);
-        fclose(f);
+        if (erro == false) {
+            FILE *f = fopen("c3e.txt", "w");
+            fprintf(f, "%s", instr);
+            fclose(f);
+        }
     }
 
     /* --- TABELA DE SIMBOLOS --- */
@@ -149,7 +153,7 @@ comando
     | read PONTO_E_VIRGULA { $$.code = $1.code; }
     | if_stmt 
     | while_stmt { $$.code = $1.code; }
-    | error PONTO_E_VIRGULA { fprintf(stderr, "Sincronizando com ';'.\n"); yyerrok; }
+    | error PONTO_E_VIRGULA { fprintf(stderr, "Sincronizando com ';'.\n"); yyerrok; erro = true;}
     ;
 
 // declaração de variáveis
@@ -165,12 +169,8 @@ declaracao
     | tipo IDENTIFICADOR maisDecl {
         declararSimbolo($2.lexema);
         tipoAtualID = T_ERROR;
-
-        int size = strlen($2.lexema) + strlen($3.code) + 10;
-        char *s = malloc(size);
-        sprintf(s, "%s = 0\n%s", $2.lexema, $3.code);
-        $$.code = s;
-      }
+        $$.code = strdup("");
+    }
     ;
 
 // sequência de declarações, separadas por vírgula
@@ -183,11 +183,7 @@ maisDecl
     }
     | VIRGULA IDENTIFICADOR maisDecl {
         declararSimbolo($2.lexema);
-
-        int size = strlen($2.lexema) + strlen($3.code) + 10;
-        char *s = malloc(size);
-        sprintf(s, "%s = 0\n%s", $2.lexema, $3.code);
-        $$.code = s;
+        $$.code = strdup("");
     }
     | {
         $$.code = strdup("");
@@ -217,6 +213,7 @@ atribuicao
                  fprintf(stderr, "ERRO SEMANTICO (Linha %d): Atribuicao incompativel. '%s' eh %s, mas recebeu %s.\n",
                     linha, $1.lexema, getNomeTipo(idType), getNomeTipo($4.typeID));
                  qtErrosSemanticos++;
+                 erro = true;
              }
         } else {
              idType = tipoAtualID;
@@ -224,6 +221,7 @@ atribuicao
                 fprintf(stderr, "ERRO SEMANTICO (Linha %d): Inicializacao invalida. Esperado %s, encontrado %s.\n", 
                         linha, getNomeTipo(idType), getNomeTipo($4.typeID));
                 qtErrosSemanticos++;
+                erro = true;
              }
 
              declararSimbolo($1.lexema);
@@ -255,6 +253,7 @@ expr:
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '+' requer operandos INT.\n", linha);
             $$.typeID = T_ERROR; qtErrosSemanticos++;
+            erro = true;
         } else {
             $$.typeID = T_INT;
         }
@@ -269,6 +268,7 @@ expr:
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '-' requer operandos INT.\n", linha);
             $$.typeID = T_ERROR; qtErrosSemanticos++;
+            erro = true;
         } else {
             $$.typeID = T_INT;
         }
@@ -283,6 +283,7 @@ expr:
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '*' requer operandos INT.\n", linha);
             $$.typeID = T_ERROR; qtErrosSemanticos++;
+            erro = true;
         } else {
             $$.typeID = T_INT;
         }
@@ -297,6 +298,7 @@ expr:
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '/' requer operandos INT.\n", linha);
             $$.typeID = T_ERROR; qtErrosSemanticos++;
+            erro = true;
         } else {
             $$.typeID = T_INT;
         }
@@ -311,6 +313,7 @@ expr:
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '%%' requer operandos INT.\n", linha);
             $$.typeID = T_ERROR; qtErrosSemanticos++;
+            erro = true;
         } else {
             $$.typeID = T_INT;
         }
@@ -325,6 +328,7 @@ expr:
         if ($1.typeID != T_INT || $3.typeID != T_INT) {
          fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operadores relacionais comparem apenas INT.\n", linha);
          $$.typeID = T_ERROR; qtErrosSemanticos++;
+         erro = true;
     } else {
         $$.typeID = T_BOOL;
     }
@@ -367,6 +371,7 @@ expr:
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
              fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador && requer operandos BOOL.\n", linha);
              $$.typeID = T_ERROR; qtErrosSemanticos++;
+             erro = true;
         } else {
             $$.typeID = T_BOOL;
         }
@@ -376,7 +381,7 @@ expr:
             char* t = new_nomeTemporaria();
             int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
             char* code = malloc(size);
-            sprintf(code, "%s%s%s = %s && %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+            sprintf(code, "%s%s%s = %s and %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
             $$.code = code;
             $$.temp = t;
             $$.labelTrue = NULL;
@@ -425,6 +430,7 @@ expr:
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
              fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador || requer operandos BOOL.\n", linha);
              $$.typeID = T_ERROR; qtErrosSemanticos++;
+             erro = true;
         } else {
             $$.typeID = T_BOOL;
         }
@@ -434,7 +440,7 @@ expr:
             char* t = new_nomeTemporaria();
             int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
             char* code = malloc(size);
-            sprintf(code, "%s%s%s = %s || %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+            sprintf(code, "%s%s%s = %s or %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
             $$.code = code;
             $$.temp = t;
             $$.labelTrue = NULL;
@@ -484,6 +490,7 @@ expr:
         if ($2.typeID != T_BOOL) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Operador '!' requer operando BOOL.\n", linha);
             $$.typeID = T_ERROR; qtErrosSemanticos++;
+            erro = true;
         } else {
             $$.typeID = T_BOOL;
         }
@@ -512,6 +519,7 @@ expr:
         if ($2.typeID != T_INT) {
             fprintf(stderr, "ERRO SEMANTICO (Linha %d): Menos unario requer operando INT.\n", linha);
             $$.typeID = T_ERROR; qtErrosSemanticos++;
+            erro = true;
         } else {
             $$.typeID = T_INT;
         }
@@ -574,6 +582,7 @@ while_stmt
              fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do WHILE deve ser BOOL. Encontrado: %s\n", 
                 linha, getNomeTipo($3.typeID));
              qtErrosSemanticos++;
+             erro = true;
         }
 
         char *Linicio = newLabel();
@@ -640,6 +649,7 @@ while_stmt
     | WHILE error PONTO_E_VIRGULA {
         fprintf(stderr, "Erro na formatação do WHILE. Sincronizando com ';'.\n");
         yyerrok;
+        erro = true;
       }
     ;
 
@@ -649,6 +659,7 @@ if_stmt
              fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do IF deve ser BOOL. Encontrado: %s\n", 
                 linha, getNomeTipo($3.typeID));
              qtErrosSemanticos++;
+             erro = true;
         }
 
         if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
@@ -722,6 +733,7 @@ if_stmt
              fprintf(stderr, "ERRO SEMANTICO (Linha %d): Condicao do IF deve ser BOOL. Encontrado: %s\n", 
                 linha, getNomeTipo($3.typeID));
              qtErrosSemanticos++;
+             erro = true;
         }
 
         if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
@@ -765,6 +777,7 @@ if_stmt
     | IF error PONTO_E_VIRGULA { // quando há um erro, sincroniza com o próximo ponto e vírgula encontrado
         fprintf(stderr, "Erro na formatação do IF. Sincronizando com ';'.\n");
         yyerrok;
+        erro = true;
       } 
     ;
 
@@ -775,7 +788,7 @@ read
 
         int size = strlen($1.lexema) + strlen($3.lexema) + 10;
         char* code = malloc(size);
-        sprintf(code, "READ %s", $3.lexema);
+        sprintf(code, "read %s", $3.lexema);
         $$.code = code;
     }
     ;
@@ -793,13 +806,13 @@ itemPrint
     : expr maisExpr {
         int size = strlen($1.temp) + strlen($2.code) + 20;
         char *s = malloc(size);
-        sprintf(s, "%sPRINT %s\n%s", $1.code, $1.temp, $2.code);
+        sprintf(s, "%sprint %s\n%s", $1.code, $1.temp, $2.code);
         $$.code = s;
     }
     | LITERAL maisExpr {
         int size = strlen($1.lexema) + strlen($2.code) + 20;
         char *s = malloc(size);
-        sprintf(s, "PRINT %s\n%s", $1.lexema, $2.code);
+        sprintf(s, "print %s\n%s", $1.lexema, $2.code);
         $$.code = s;
     }
     ;
@@ -809,13 +822,13 @@ maisExpr
     : VIRGULA expr maisExpr {
         int size = strlen($2.temp) + strlen($2.temp) + strlen($3.code) + 50;
         char *s = malloc(size);
-        sprintf(s, "%sPRINT %s\n%s", $2.code, $2.temp, $3.code);
+        sprintf(s, "%sprint %s\n%s", $2.code, $2.temp, $3.code);
         $$.code = s;
     }
     | VIRGULA LITERAL maisExpr {
         int size = strlen($2.lexema) + strlen($3.code) + 20;
         char *s = malloc(size);
-        sprintf(s, "PRINT %s\n%s", $2.lexema, $3.code);
+        sprintf(s, "print %s\n%s", $2.lexema, $3.code);
         $$.code = s;
     }
     | { $$.code = strdup(""); }
@@ -835,8 +848,10 @@ void yyerror(const char *s) {
 
     if (yychar == YYEOF) {
         fprintf(stderr, "Erro sintático no final do arquivo, linha %d, coluna %d: %s\n", linha, coluna_erro, s);
+        erro = true;
     } else {
         fprintf(stderr, "Erro sintático na linha %d, coluna %d, próximo a '%s': %s\n", linha, coluna_erro, yytext, s);
+        erro = true;
     }
 }
 
