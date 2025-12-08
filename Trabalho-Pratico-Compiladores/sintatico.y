@@ -394,237 +394,315 @@ expr:
         }
     }
     | expr OP_AND expr {
-        if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
-            lancaErroSemantico("Operador && requer operandos BOOL.");
-        } else {
-            $$.typeID = T_BOOL;
-        }
+    if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
+        lancaErroSemantico("Operador && requer operandos BOOL.");
+    } else {
+        $$.typeID = T_BOOL;
+    }
+    
+    if (inAssignmentContext) {
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s and %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+        $$.labelTrue = NULL;
+        $$.labelFalse = NULL;
+    } else {
+        // Para &&, o resultado é true se ambos forem true
+        char* Lfalse = newLabel();
+        char* code = NULL;
         
-        if (inAssignmentContext) {
-            char* t = new_nomeTemporaria();
-            int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
-            char* code = malloc(size);
-            sprintf(code, "%s%s%s = %s and %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
-            $$.code = code;
-            $$.temp = t;
-            $$.labelTrue = NULL;
-            $$.labelFalse = NULL;
-        } else {
-            char* Lfalse = newLabel();
-            char* code = NULL;
-
-            if ($1.labelTrue == NULL && $1.labelFalse == NULL) {
-                // A É SIMPLES
-                int size_code = strlen($1.code) + strlen($1.temp) + strlen(Lfalse);
+        if ($1.labelTrue == NULL && $1.labelFalse == NULL) {
+            // A é SIMPLES - tem valor booleano direto
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B é COMPLEXO - tem labels de controle
+                // Para a && (b && c):
+                // Se a é falso: goto Lfalse (final)
+                // Se a é verdadeiro: avalia b && c
                 
-                if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B é COMPLEXO
-                    char* modified_b_code;
-                    if ($3.labelFalse != NULL) {
-                        modified_b_code = replaceLabel($3.code, $3.labelFalse, Lfalse);
-                    } else {
-                        modified_b_code = strdup($3.code);
-                    }
-                    
-                    size_code += strlen(modified_b_code) + 100;
-                    code = malloc(size_code);
-                    
-                    sprintf(code, "%sifFalse %s goto %s\n%s", 
+                int size_code = strlen($1.code) + strlen($3.code) + 
+                              strlen($1.temp) + strlen(Lfalse) + 50;
+                code = malloc(size_code);
+                
+                // Se B tem labelFalse, precisa apontar para nosso Lfalse
+                char* modified_b_code;
+                if ($3.labelFalse != NULL) {
+                    modified_b_code = replaceLabel($3.code, $3.labelFalse, Lfalse);
+                } else {
+                    modified_b_code = strdup($3.code);
+                }
+                
+                sprintf(code, "%s"          // Código que avalia a
+                            "ifFalse %s goto %s\n"  // Se a é falso, vai para Lfalse
+                            "%s",         // Código que avalia b && c
                             $1.code, $1.temp, Lfalse,
                             modified_b_code);
-                    
-                    free(modified_b_code);
-                    $$.code = code;
-                    $$.temp = $3.temp;
-                    $$.labelTrue = NULL;
-                    $$.labelFalse = Lfalse;
-                } else {
-                    // B é simples
-                    size_code += strlen($3.code) + strlen($3.temp) + strlen(Lfalse) + 50;
-                    code = malloc(size_code);
-                    
-                    sprintf(code, "%sifFalse %s goto %s\n%sifFalse %s goto %s\n", 
+                
+                free(modified_b_code);
+                $$.code = code;
+                $$.temp = NULL;
+                // O labelTrue do resultado é o labelTrue de B (b && c)
+                $$.labelTrue = $3.labelTrue;
+                $$.labelFalse = Lfalse;
+            } else {
+                // Ambos são SIMPLES
+                int size_code = strlen($1.code) + strlen($3.code) + 
+                              strlen($1.temp) + strlen($3.temp) + 
+                              strlen(Lfalse) + 100;
+                code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código que avalia a
+                            "ifFalse %s goto %s\n"  // Se a é falso, vai para Lfalse
+                            "%s"          // Código que avalia b
+                            "ifFalse %s goto %s\n", // Se b é falso, vai para Lfalse
                             $1.code, $1.temp, Lfalse,
                             $3.code, $3.temp, Lfalse);
-                    
-                    $$.code = code;
-                    $$.temp = $3.temp;
-                    $$.labelTrue = NULL;
-                    $$.labelFalse = Lfalse;
-                }
-            } else {
-            // A NÃO É SIMPLES
-            
-            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                // B também é complexo - código atual (com Ltemp)
-                // ... código igual ...
-            } else {
-                // B é SIMPLES
-                // Redirecionar labelFalse de A para Lfalse
-                char* modified_a_code = replaceLabel($1.code, $1.labelFalse, Lfalse);
                 
-                // Adicionar teste para B
-                int size_code = strlen(modified_a_code) + strlen($3.code) + 
-                            strlen($3.temp) + strlen(Lfalse) + 100;
-                char* code = malloc(size_code);
-                
-                sprintf(code, "%s"          // Código de A modificado
-                            "%s"          // Código que avalia B
-                            "ifFalse %s goto %s\n",  // Testa B
-                        modified_a_code,
-                        $3.code,
-                        $3.temp, Lfalse);
-                
-                free(modified_a_code);
                 $$.code = code;
                 $$.temp = $3.temp;
                 $$.labelTrue = NULL;
                 $$.labelFalse = Lfalse;
             }
-        }
-    }
-}
-    
-    | expr OP_OR expr {
-        if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
-            lancaErroSemantico("Operador || requer operandos BOOL.");
         } else {
-            $$.typeID = T_BOOL;
-        }
-
-        if (inAssignmentContext) {
-            char* t = new_nomeTemporaria();
-            int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
-            char* code = malloc(size);
-            sprintf(code, "%s%s%s = %s or %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
-            $$.code = code;
-            $$.temp = t;
-            $$.labelTrue = NULL;
-            $$.labelFalse = NULL;
-        } else {
-            char* Ltrue = newLabel();
-            char* Lfalse = newLabel();
-            char* code = NULL;
-            int size_code = 0;
-
-            if ($1.labelTrue == NULL && $1.labelFalse == NULL) {
-                // A É SIMPLES
+            // A é COMPLEXO - já tem labels de controle
+            // Para a && (b && c) onde a é complexo:
+            // Quando a é falso: deve ir para Lfalse (nosso false final)
+            // Quando a é verdadeiro: deve avaliar b && c
+            
+            char* modified_a_code = strdup($1.code);
+            
+            // Se A tem labelFalse, substitui por nosso Lfalse
+            if ($1.labelFalse != NULL) {
+                char* temp = replaceLabel(modified_a_code, $1.labelFalse, Lfalse);
+                free(modified_a_code);
+                modified_a_code = temp;
+            }
+            
+            // Se A tem labelTrue, precisamos avaliar B
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B é COMPLEXO
+                // Se A é verdadeiro, continua com B
+                // O labelTrue de A deve levar para o início da avaliação de B
                 
-                if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B é COMPLEXO
-                    char* modified_b_code = strdup($3.code);
-                    
-                    if ($3.labelTrue != NULL) {
-                        char* temp = replaceLabel(modified_b_code, $3.labelTrue, Ltrue);
-                        free(modified_b_code);
-                        modified_b_code = temp;
-                    }
-                    
-                    if ($3.labelFalse != NULL) {
-                        char* temp = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
-                        free(modified_b_code);
-                        modified_b_code = temp;
-                    }
-                    
-                    size_code = strlen($1.code) + strlen($1.temp) + 
-                            strlen(Ltrue) + strlen(modified_b_code) + 50;
-                    code = malloc(size_code);
-                    
-                    sprintf(code, "%sif %s goto %s\n%s", 
-                            $1.code, $1.temp, Ltrue,
-                            modified_b_code);
-                    
-                    free(modified_b_code);
-                } else {
-                    // Ambos SIMPLES - NÃO definir Ltrue aqui!
-                    size_code = strlen($1.code) + strlen($1.temp) + 
-                            strlen($3.code) + strlen($3.temp) +
-                            strlen(Ltrue) + strlen(Lfalse) + 50;
-                    code = malloc(size_code);
-                    
-                    sprintf(code, "%sif %s goto %s\n"    // Testa A
-                                "%sif %s goto %s\n"    // Testa B
-                                "goto %s\n",           // Ambos falsos
-                            $1.code, $1.temp, Ltrue,
-                            $3.code, $3.temp, Ltrue,
-                            Lfalse);
-                }
-                
-                $$.temp = NULL;
-                $$.labelTrue = Ltrue;
-                $$.labelFalse = Lfalse;
-            } else {
-                // A NÃO É SIMPLES
-                char* Ltemp = newLabel();
-                
-                char* modified_a_code = strdup($1.code);
+                char* Ltemp = newLabel();  // Label para onde ir quando A é true
                 
                 if ($1.labelTrue != NULL) {
-                    char* temp = replaceLabel(modified_a_code, $1.labelTrue, Ltrue);
+                    char* temp = replaceLabel(modified_a_code, $1.labelTrue, Ltemp);
                     free(modified_a_code);
                     modified_a_code = temp;
                 }
                 
-                char* final_a_code;
-                if ($1.labelFalse != NULL) {
-                    final_a_code = replaceLabel(modified_a_code, $1.labelFalse, Ltemp);
-                    free(modified_a_code);
+                // Ajusta B: seu labelFalse deve ir para nosso Lfalse
+                char* modified_b_code;
+                if ($3.labelFalse != NULL) {
+                    modified_b_code = replaceLabel($3.code, $3.labelFalse, Lfalse);
                 } else {
-                    final_a_code = modified_a_code;
+                    modified_b_code = strdup($3.code);
                 }
                 
-                if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B é COMPLEXO
-                    char* modified_b_code = strdup($3.code);
-                    
-                    if ($3.labelTrue != NULL) {
-                        char* temp = replaceLabel(modified_b_code, $3.labelTrue, Ltrue);
-                        free(modified_b_code);
-                        modified_b_code = temp;
-                    }
-                    
-                    if ($3.labelFalse != NULL) {
-                        char* temp = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
-                        free(modified_b_code);
-                        modified_b_code = temp;
-                    }
-                    
-                    size_code = strlen(final_a_code) + strlen(modified_b_code) + 
-                            strlen(Ltemp) + 50;
-                    code = malloc(size_code);
-                    
-                    sprintf(code, "%s%s:\n%s", 
-                            final_a_code, Ltemp,
+                int size_code = strlen(modified_a_code) + strlen(modified_b_code) + 
+                              strlen(Ltemp) + 50;
+                code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código de A modificado
+                            "%s:\n"       // Label quando A é true
+                            "%s",         // Código de B modificado
+                            modified_a_code, Ltemp,
                             modified_b_code);
-                    
-                    free(modified_b_code);
-                } else {
-                    // B é SIMPLES
-                    size_code = strlen(final_a_code) + strlen($3.code) + 
-                            strlen($3.temp) + strlen(Ltemp) +
-                            strlen(Ltrue) + strlen(Lfalse) + 100;
-                    code = malloc(size_code);
-                    
-                    sprintf(code, "%s%s:\n"          // Código de A + label temporário
-                                "%s"               // Código de B
-                                "if %s goto %s\n"  // Testa B
-                                "goto %s\n",       // B falso
-                            final_a_code, Ltemp,
-                            $3.code,
-                            $3.temp, Ltrue,
-                            Lfalse);
+                
+                free(modified_b_code);
+                free(Ltemp);
+                $$.code = code;
+                $$.temp = NULL;
+                $$.labelTrue = $3.labelTrue;  // Resultado é true quando B é true
+                $$.labelFalse = Lfalse;      // Resultado é false quando A ou B é false
+            } else {
+                // B é SIMPLES
+                // Se A é verdadeiro, testa B
+                // Se B é falso, vai para Lfalse
+                
+                char* Ltemp = newLabel();  // Label para onde ir quando A é true
+                
+                if ($1.labelTrue != NULL) {
+                    char* temp = replaceLabel(modified_a_code, $1.labelTrue, Ltemp);
+                    free(modified_a_code);
+                    modified_a_code = temp;
                 }
                 
-                free(final_a_code);
+                int size_code = strlen(modified_a_code) + strlen($3.code) + 
+                              strlen($3.temp) + strlen(Ltemp) + 
+                              strlen(Lfalse) + 100;
+                code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código de A modificado
+                            "%s:\n"       // Label quando A é true
+                            "%s"          // Código que avalia B
+                            "ifFalse %s goto %s\n", // Se B é falso, vai para Lfalse
+                            modified_a_code, Ltemp,
+                            $3.code, $3.temp, Lfalse);
+                
                 free(Ltemp);
-                $$.temp = NULL;
-                $$.labelTrue = Ltrue;
+                $$.code = code;
+                $$.temp = $3.temp;
+                $$.labelTrue = NULL;
                 $$.labelFalse = Lfalse;
             }
             
-            $$.code = code;
+            free(modified_a_code);
         }
     }
+}
+    
+| expr OP_OR expr {
+    if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
+        lancaErroSemantico("Operador || requer operandos BOOL.");
+    } else {
+        $$.typeID = T_BOOL;
+    }
+
+    if (inAssignmentContext) {
+        char* t = new_nomeTemporaria();
+        int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
+        char* code = malloc(size);
+        sprintf(code, "%s%s%s = %s or %s\n", $1.code, $3.code, t, $1.temp, $3.temp);
+        $$.code = code;
+        $$.temp = t;
+        $$.labelTrue = NULL;
+        $$.labelFalse = NULL;
+    } else {
+        // Para ||, queremos true se pelo menos um for true
+        char* Ltrue = newLabel();
+        char* Lfalse = newLabel();
+        char* code = NULL;
+        
+        if ($1.labelTrue == NULL && $1.labelFalse == NULL) {
+            // A é SIMPLES
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B é COMPLEXO
+                char* modified_b_code = strdup($3.code);
+                
+                // Quando B for true, vai para Ltrue
+                if ($3.labelTrue != NULL) {
+                    char* temp = replaceLabel(modified_b_code, $3.labelTrue, Ltrue);
+                    free(modified_b_code);
+                    modified_b_code = temp;
+                }
+                
+                // Quando B for false, vai para Lfalse
+                if ($3.labelFalse != NULL) {
+                    char* temp = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
+                    free(modified_b_code);
+                    modified_b_code = temp;
+                }
+                
+                int size_code = strlen($1.code) + strlen(modified_b_code) + 
+                              strlen($1.temp) + strlen(Ltrue) + 50;
+                code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código de A
+                            "if %s goto %s\n"   // Se A true, vai para Ltrue
+                            "%s",         // Código de B
+                            $1.code, $1.temp, Ltrue,
+                            modified_b_code);
+                
+                free(modified_b_code);
+                $$.temp = NULL;
+            } else {
+                // Ambos são SIMPLES
+                int size_code = strlen($1.code) + strlen($3.code) + 
+                              strlen($1.temp) + strlen($3.temp) +
+                              strlen(Ltrue) + strlen(Lfalse) + 100;
+                code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código de A
+                            "if %s goto %s\n"   // Se A true, vai para Ltrue
+                            "%s"          // Código de B
+                            "if %s goto %s\n"   // Se B true, vai para Ltrue
+                            "goto %s\n",       // Se ambos false, vai para Lfalse
+                            $1.code, $1.temp, Ltrue,
+                            $3.code, $3.temp, Ltrue,
+                            Lfalse);
+                
+                $$.temp = NULL;
+            }
+        } else {
+            // A é COMPLEXO
+            // Primeiro, ajustamos A para que quando for true, vá para Ltrue
+            char* modified_a_code = strdup($1.code);
+            
+            if ($1.labelTrue != NULL) {
+                char* temp = replaceLabel(modified_a_code, $1.labelTrue, Ltrue);
+                free(modified_a_code);
+                modified_a_code = temp;
+            }
+            
+            // Se A tem labelFalse, substituímos por um label temporário
+            // porque precisamos avaliar B também
+            char* Ltemp = newLabel();
+            if ($1.labelFalse != NULL) {
+                char* temp = replaceLabel(modified_a_code, $1.labelFalse, Ltemp);
+                free(modified_a_code);
+                modified_a_code = temp;
+            }
+            
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B é COMPLEXO
+                char* modified_b_code = strdup($3.code);
+                
+                // Quando B for true, vai para Ltrue
+                if ($3.labelTrue != NULL) {
+                    char* temp = replaceLabel(modified_b_code, $3.labelTrue, Ltrue);
+                    free(modified_b_code);
+                    modified_b_code = temp;
+                }
+                
+                // Quando B for false, vai para Lfalse
+                if ($3.labelFalse != NULL) {
+                    char* temp = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
+                    free(modified_b_code);
+                    modified_b_code = temp;
+                }
+                
+                int size_code = strlen(modified_a_code) + strlen(modified_b_code) + 
+                              strlen(Ltemp) + 50;
+                code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código de A modificado
+                            "%s:\n"       // Label temporário quando A é false
+                            "%s",         // Código de B
+                            modified_a_code, Ltemp,
+                            modified_b_code);
+                
+                free(modified_b_code);
+            } else {
+                // B é SIMPLES
+                int size_code = strlen(modified_a_code) + strlen($3.code) + 
+                              strlen($3.temp) + strlen(Ltemp) +
+                              strlen(Ltrue) + strlen(Lfalse) + 100;
+                code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código de A modificado
+                            "%s:\n"       // Label temporário quando A é false
+                            "%s"          // Código de B
+                            "if %s goto %s\n"   // Se B true, vai para Ltrue
+                            "goto %s\n",       // Se B false, vai para Lfalse
+                            modified_a_code, Ltemp,
+                            $3.code, $3.temp, Ltrue,
+                            Lfalse);
+            }
+            
+            free(modified_a_code);
+            free(Ltemp);
+            $$.temp = NULL;
+        }
+        
+        $$.code = code;
+        $$.labelTrue = Ltrue;
+        $$.labelFalse = Lfalse;
+    }
+}
     | NOT expr {
         if ($2.typeID != T_BOOL) {
             lancaErroSemantico("Operador '!' requer operando BOOL.");
