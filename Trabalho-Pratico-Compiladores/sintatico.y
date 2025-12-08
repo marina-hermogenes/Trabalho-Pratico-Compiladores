@@ -398,9 +398,8 @@ expr:
             lancaErroSemantico("Operador && requer operandos BOOL.");
         } else {
             $$.typeID = T_BOOL;
-            }
+        }
         
-        /* Se estamos em contexto de atribuição, gera código de 3 endereços simples */
         if (inAssignmentContext) {
             char* t = new_nomeTemporaria();
             int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
@@ -411,91 +410,80 @@ expr:
             $$.labelTrue = NULL;
             $$.labelFalse = NULL;
         } else {
-            /* Contexto de controle de fluxo: mantém lógica de curto-circuito */
             char* Lfalse = newLabel();
+            char* code = NULL;
 
-            // Primeiro verificar se A é simples ou não
             if ($1.labelTrue == NULL && $1.labelFalse == NULL) {
-                // A É SIMPLES (código original)
+                // A É SIMPLES
                 int size_code = strlen($1.code) + strlen($1.temp) + strlen(Lfalse);
                 
-                // Se B tem seus próprios labels, apenas concatenar
                 if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B já gera seus próprios desvios
-                    size_code += strlen($3.code) + 100;
-                } else {
-                    // B é simples - gerar ifFalse para ele
-                    size_code += strlen($3.code) + strlen($3.temp) + strlen(Lfalse) + 50;
-                }
-                
-                char* code = malloc(size_code);
-                
-                if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B tem labels próprios - só redirecionar o labelFalse
-                    sprintf(code, "%s"                           
-                                "ifFalse %s goto %s\n"      
-                                "%s",                           
+                    // B é COMPLEXO
+                    char* modified_b_code;
+                    if ($3.labelFalse != NULL) {
+                        modified_b_code = replaceLabel($3.code, $3.labelFalse, Lfalse);
+                    } else {
+                        modified_b_code = strdup($3.code);
+                    }
+                    
+                    size_code += strlen(modified_b_code) + 100;
+                    code = malloc(size_code);
+                    
+                    sprintf(code, "%sifFalse %s goto %s\n%s", 
                             $1.code, $1.temp, Lfalse,
-                            $3.code);
-                } else {
-                    // B é simples
-                    sprintf(code, "%s"                           
-                                "ifFalse %s goto %s\n"      
-                                "%s"                          
-                                "ifFalse %s goto %s\n",      
-                            $1.code, $1.temp, Lfalse,
-                            $3.code, $3.temp, Lfalse);
-                }
-                
-                $$.code = code;
-                $$.temp = $3.temp;
-                $$.labelTrue = NULL;
-                $$.labelFalse = Lfalse;
-            } else {
-                // A NÃO É SIMPLES (tem labels próprios)
-                // Para o operador AND, precisamos redirecionar o labelFalse de A para Lfalse
-                // e o labelTrue de A deve continuar apontando para a avaliação de B
-                
-                if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B também tem labels próprios
-                    // Redirecionar todas as ocorrências do labelFalse de A para Lfalse
-                    char* modified_a_code = replaceLabel($1.code, $1.labelFalse, Lfalse);
+                            modified_b_code);
                     
-                    int size_code = strlen(modified_a_code) + strlen($3.code) + 100;
-                    char* code = malloc(size_code);
-                    
-                    sprintf(code, "%s%s", modified_a_code, $3.code);
-                    
-                    free(modified_a_code);
+                    free(modified_b_code);
                     $$.code = code;
                     $$.temp = $3.temp;
-                    $$.labelTrue = $3.labelTrue;  // Herda labelTrue de B
-                    $$.labelFalse = Lfalse;       // labelFalse é Lfalse
+                    $$.labelTrue = NULL;
+                    $$.labelFalse = Lfalse;
                 } else {
                     // B é simples
-                    // Redirecionar labelFalse de A para Lfalse
-                    char* modified_a_code = replaceLabel($1.code, $1.labelFalse, Lfalse);
+                    size_code += strlen($3.code) + strlen($3.temp) + strlen(Lfalse) + 50;
+                    code = malloc(size_code);
                     
-                    int size_code = strlen(modified_a_code) + strlen($3.code) + 
-                                strlen($3.temp) + strlen(Lfalse) + 100;
-                    char* code = malloc(size_code);
+                    sprintf(code, "%sifFalse %s goto %s\n%sifFalse %s goto %s\n", 
+                            $1.code, $1.temp, Lfalse,
+                            $3.code, $3.temp, Lfalse);
                     
-                    sprintf(code, "%s"          // Código de A (com labelFalse redirecionado)
-                                "%s"          // Código de B (onde A.labelTrue aponta)
-                                "ifFalse %s goto %s\n", // Testar B
-                            modified_a_code,
-                            $3.code,
-                            $3.temp, Lfalse);
-                    
-                    free(modified_a_code);
                     $$.code = code;
                     $$.temp = $3.temp;
                     $$.labelTrue = NULL;
                     $$.labelFalse = Lfalse;
                 }
+            } else {
+            // A NÃO É SIMPLES
+            
+            if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
+                // B também é complexo - código atual (com Ltemp)
+                // ... código igual ...
+            } else {
+                // B é SIMPLES
+                // Redirecionar labelFalse de A para Lfalse
+                char* modified_a_code = replaceLabel($1.code, $1.labelFalse, Lfalse);
+                
+                // Adicionar teste para B
+                int size_code = strlen(modified_a_code) + strlen($3.code) + 
+                            strlen($3.temp) + strlen(Lfalse) + 100;
+                char* code = malloc(size_code);
+                
+                sprintf(code, "%s"          // Código de A modificado
+                            "%s"          // Código que avalia B
+                            "ifFalse %s goto %s\n",  // Testa B
+                        modified_a_code,
+                        $3.code,
+                        $3.temp, Lfalse);
+                
+                free(modified_a_code);
+                $$.code = code;
+                $$.temp = $3.temp;
+                $$.labelTrue = NULL;
+                $$.labelFalse = Lfalse;
             }
         }
     }
+}
     
     | expr OP_OR expr {
         if ($1.typeID != T_BOOL || $3.typeID != T_BOOL) {
@@ -504,7 +492,6 @@ expr:
             $$.typeID = T_BOOL;
         }
 
-        /* Se está em contexto de atribuição, gera código de 3 endereços simples */
         if (inAssignmentContext) {
             char* t = new_nomeTemporaria();
             int size = strlen($1.code) + strlen($3.code) + strlen($1.temp) + strlen($3.temp) + 50;
@@ -515,145 +502,127 @@ expr:
             $$.labelTrue = NULL;
             $$.labelFalse = NULL;
         } else {
-            /* Contexto de controle de fluxo: mantém lógica de curto-circuito */
-            // OR com curto-circuito: A || B
-
             char* Ltrue = newLabel();
             char* Lfalse = newLabel();
+            char* code = NULL;
+            int size_code = 0;
 
-            // Primeiro verificar se A é simples ou não
             if ($1.labelTrue == NULL && $1.labelFalse == NULL) {
                 // A É SIMPLES
-                int size_code = strlen($1.code) + strlen($1.temp) + 
-                            strlen(Ltrue) + strlen(Lfalse) + 50;
                 
                 if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B tem labels próprios (como uma expressão AND)
-                    // Para OR: 
-                    // - B.labelTrue deve apontar para Ltrue (quando B é verdadeiro)
-                    // - B.labelFalse deve apontar para Lfalse (quando B é falso)
+                    // B é COMPLEXO
+                    char* modified_b_code = strdup($3.code);
                     
-                    // Redirecionar labels de B
-                    char* modified_b_code;
                     if ($3.labelTrue != NULL) {
-                        modified_b_code = replaceLabel($3.code, $3.labelTrue, Ltrue);
-                    } else {
-                        modified_b_code = strdup($3.code);
+                        char* temp = replaceLabel(modified_b_code, $3.labelTrue, Ltrue);
+                        free(modified_b_code);
+                        modified_b_code = temp;
                     }
                     
-                    char* final_b_code;
                     if ($3.labelFalse != NULL) {
-                        final_b_code = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
-                    } else {
-                        final_b_code = strdup(modified_b_code);
+                        char* temp = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
+                        free(modified_b_code);
+                        modified_b_code = temp;
                     }
-                    free(modified_b_code);
                     
-                    size_code += strlen(final_b_code) + 100;
+                    size_code = strlen($1.code) + strlen($1.temp) + 
+                            strlen(Ltrue) + strlen(modified_b_code) + 50;
+                    code = malloc(size_code);
                     
-                    char* code = malloc(size_code);
-                    sprintf(code, "%s"                          
-                                "if %s goto %s\n"            // Se A true -> Ltrue (short-circuit)
-                                "%s",                        // Código de B com labels redirecionados
+                    sprintf(code, "%sif %s goto %s\n%s", 
                             $1.code, $1.temp, Ltrue,
-                            final_b_code);
-                    // NÃO adicionamos "goto Lfalse" aqui porque B já tem seu próprio fluxo
+                            modified_b_code);
                     
-                    free(final_b_code);
-                    $$.code = code;
+                    free(modified_b_code);
                 } else {
-                    // B é simples
-                    size_code += strlen($3.code) + strlen($3.temp) + 50;
+                    // Ambos SIMPLES - NÃO definir Ltrue aqui!
+                    size_code = strlen($1.code) + strlen($1.temp) + 
+                            strlen($3.code) + strlen($3.temp) +
+                            strlen(Ltrue) + strlen(Lfalse) + 50;
+                    code = malloc(size_code);
                     
-                    char* code = malloc(size_code);
-                    sprintf(code, "%s"                           
-                                "if %s goto %s\n"            // Se A true -> Ltrue
-                                "%s"                         // Avalia B
-                                "if %s goto %s\n"            // Se B true -> Ltrue
-                                "goto %s\n",                 // Se B false -> Lfalse
+                    sprintf(code, "%sif %s goto %s\n"    // Testa A
+                                "%sif %s goto %s\n"    // Testa B
+                                "goto %s\n",           // Ambos falsos
                             $1.code, $1.temp, Ltrue,
                             $3.code, $3.temp, Ltrue,
                             Lfalse);
-                    $$.code = code;
                 }
+                
+                $$.temp = NULL;
+                $$.labelTrue = Ltrue;
+                $$.labelFalse = Lfalse;
             } else {
                 // A NÃO É SIMPLES
                 char* Ltemp = newLabel();
                 
-                // Redirecionar labels de A
-                char* modified_a_code;
+                char* modified_a_code = strdup($1.code);
+                
                 if ($1.labelTrue != NULL) {
-                    modified_a_code = replaceLabel($1.code, $1.labelTrue, Ltrue);
-                } else {
-                    modified_a_code = strdup($1.code);
+                    char* temp = replaceLabel(modified_a_code, $1.labelTrue, Ltrue);
+                    free(modified_a_code);
+                    modified_a_code = temp;
                 }
                 
                 char* final_a_code;
                 if ($1.labelFalse != NULL) {
                     final_a_code = replaceLabel(modified_a_code, $1.labelFalse, Ltemp);
+                    free(modified_a_code);
                 } else {
-                    final_a_code = strdup(modified_a_code);
+                    final_a_code = modified_a_code;
                 }
-                free(modified_a_code);
-                
-                int size_code = strlen(final_a_code) + strlen(Ltemp) + 
-                            strlen(Ltrue) + strlen(Lfalse) + 50;
                 
                 if ($3.labelTrue != NULL || $3.labelFalse != NULL) {
-                    // B tem labels próprios
-                    // Redirecionar labels de B
-                    char* modified_b_code;
+                    // B é COMPLEXO
+                    char* modified_b_code = strdup($3.code);
+                    
                     if ($3.labelTrue != NULL) {
-                        modified_b_code = replaceLabel($3.code, $3.labelTrue, Ltrue);
-                    } else {
-                        modified_b_code = strdup($3.code);
+                        char* temp = replaceLabel(modified_b_code, $3.labelTrue, Ltrue);
+                        free(modified_b_code);
+                        modified_b_code = temp;
                     }
                     
-                    char* final_b_code;
                     if ($3.labelFalse != NULL) {
-                        final_b_code = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
-                    } else {
-                        final_b_code = strdup(modified_b_code);
+                        char* temp = replaceLabel(modified_b_code, $3.labelFalse, Lfalse);
+                        free(modified_b_code);
+                        modified_b_code = temp;
                     }
+                    
+                    size_code = strlen(final_a_code) + strlen(modified_b_code) + 
+                            strlen(Ltemp) + 50;
+                    code = malloc(size_code);
+                    
+                    sprintf(code, "%s%s:\n%s", 
+                            final_a_code, Ltemp,
+                            modified_b_code);
+                    
                     free(modified_b_code);
-                    
-                    size_code += strlen(final_b_code) + 100;
-                    
-                    char* code = malloc(size_code);
-                    sprintf(code, "%s"          // Código de A com labels redirecionados
-                                "%s:\n"         // Label temporário
-                                "%s",         // Código de B com labels redirecionados
-                            final_a_code,
-                            Ltemp,
-                            final_b_code);
-                    // NÃO adicionamos "goto Lfalse" porque B já tem seu próprio fluxo
-                    
-                    free(final_b_code);
-                    $$.code = code;
                 } else {
-                    // B é simples
-                    size_code += strlen($3.code) + strlen($3.temp) + 50;
+                    // B é SIMPLES
+                    size_code = strlen(final_a_code) + strlen($3.code) + 
+                            strlen($3.temp) + strlen(Ltemp) +
+                            strlen(Ltrue) + strlen(Lfalse) + 100;
+                    code = malloc(size_code);
                     
-                    char* code = malloc(size_code);
-                    sprintf(code, "%s"          // Código de A com labels redirecionados
-                                "%s:\n"         // Label temporário
-                                "%s"          // Código de B
-                                "if %s goto %s\n"  // Se B true -> Ltrue
-                                "goto %s\n",       // Se B false -> Lfalse
-                            final_a_code,
-                            Ltemp,
+                    sprintf(code, "%s%s:\n"          // Código de A + label temporário
+                                "%s"               // Código de B
+                                "if %s goto %s\n"  // Testa B
+                                "goto %s\n",       // B falso
+                            final_a_code, Ltemp,
                             $3.code,
                             $3.temp, Ltrue,
                             Lfalse);
-                    $$.code = code;
                 }
+                
                 free(final_a_code);
                 free(Ltemp);
+                $$.temp = NULL;
+                $$.labelTrue = Ltrue;
+                $$.labelFalse = Lfalse;
             }
-
-            $$.temp = NULL;
-            $$.labelTrue = Ltrue;
-            $$.labelFalse = Lfalse;
+            
+            $$.code = code;
         }
     }
     | NOT expr {
@@ -700,6 +669,8 @@ expr:
         $$.code = $2.code;
         $$.temp = $2.temp;
         $$.typeID = $2.typeID; 
+        $$.labelFalse = $2.labelFalse;
+        $$.labelTrue = $2.labelTrue;
     }
     | IDENTIFICADOR {
         $$.typeID = getTipoSimbolo($1.lexema);
