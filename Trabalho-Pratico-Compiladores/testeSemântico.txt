@@ -1,0 +1,19 @@
+int a, b;
+bool executando;
+
+read(a);
+
+b = 1;
+executando = a > 0;
+
+while (executando && b < 100) {
+    if (a % 2 == 0) {
+        print("Par: ", a);
+        b = b * a;
+    } else {
+        print("Impar", b);
+    }
+    
+    a = a - 1;
+    executando = !(a == 0);
+}
