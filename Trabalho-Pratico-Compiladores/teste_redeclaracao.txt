@@ -1,0 +1,6 @@
+int teste;
+
+{
+   int teste; /* Isso pode! (É outra variável em outro escopo) */
+   int teste; /* ERRO! Redeclaração no mesmo escopo */
+}

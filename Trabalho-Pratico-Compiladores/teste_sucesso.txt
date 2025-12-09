@@ -1,0 +1,18 @@
+int x;
+bool controle;
+
+/* Função Main implícita (código solto) */
+x = 0;
+controle = true;
+
+while (controle) {
+    int y;
+    y = x + 1;
+    
+    if (y > 5) {
+        controle = false;
+        print(y);
+    } else {
+        x = y;
+    }
+}

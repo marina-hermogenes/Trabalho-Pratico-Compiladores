@@ -1,0 +1,48 @@
+/* ---------- CASOS VÁLIDOS ---------- */
+bool flag = true, flag2 = false;
+int y, t = x = 9, h;
+y = x + 5 * (2 + -3);
+print("Resultado: ", x, -1);
+read(y);
+{
+    int a = 1, b = 2;
+    print(a, ", ", b);
+    {
+        int negativo = -5;
+    }
+}
+if (x > 0) {
+    if (y > 0)
+        print("sim");
+    else
+        print("nao");
+}
+while (x < 3) {
+    print(x);
+}
+
+/* ---------- CASOS QUE DEVEM GERAR ERRO (sincronizam com ';') ---------- */
+z = ;
+w = 5 + * 3;
+p = (4 + 2;
+q = a && || b;
+r = !;
+print("ok", , );
+read();
+while x < 5;
+if (a > ) ;
+if (flag) print("ok");
+else
+int ;
+s = + - * / % ;
+t = ( ) ;
+{
+    int e = 5;
+    print(e
+
+/* teste de erros seguidos para ver se parser recupera */
+x = 1 + *;
+print("fim", );
+
+/* fim do arquivo com caso válido para confirmar recuperação */
+print("acabou", ok_final);

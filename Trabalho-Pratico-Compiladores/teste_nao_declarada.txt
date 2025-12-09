@@ -1,0 +1,8 @@
+int a;
+a = 10;
+
+print(b); /* ERRO: b nunca foi declarada! */
+
+{
+    x = 5; /* ERRO: x nunca foi declarada! */
+}

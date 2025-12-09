@@ -1,0 +1,51 @@
+// ---------- Teste de tipos e declarações ----------
+int a, b, c;
+bool x, y, z;
+
+// ---------- Teste de atribuições simples e expressões ----------
+a = 1 + 2 * 3;             // precedência * antes de +
+b = (1 + 2) * 3;           // uso de parênteses
+c = -(a + b) / 2;          // número negativo e divisão
+
+// ---------- Teste de relacionais ----------
+x = a == b;
+y = a != b && b < c || a >= c; // mistura relacional + lógico
+z = !(x || y) && (a > 0);      // negação + precedência
+
+// ---------- Teste de entrada e saída ----------
+print(a, b, c);
+print("valores lógicos:", x, y, z);
+read(a);
+read(b);
+
+// ---------- Teste de estruturas de controle ----------
+if (a > b) {
+    print("a é maior que b");
+} else {
+    print("b é maior ou igual a a");
+}
+
+// ---------- Teste de laço ----------
+while (a < 10 && b < 20) {
+    print("loop:", a, b);
+    a = a + 1;
+    b = b + 2;
+}
+
+// ---------- Teste de combinações e precedência complexa ----------
+x = !(a + b * c < (a - 3) * (b / 2)) && (true || false);
+y = ((1 + 2) * (3 + 4) / (2 - 1)) == 14 && !false;
+z = (x && !y) || (a < b && !(b > c));
+
+// ---------- Teste de parênteses e NOT aninhados ----------
+x = !!!true;
+y = !(!false && true);
+z = !(1 + (2 * (3 + (4 / 2))) == 7);
+
+// ---------- Teste de expressões com negativos ----------
+a = -1 + -2 * (-3);
+b = (-a) + (b * (-c));
+c = (a * b) - (-(-c));
+
+// ---------- Fim do programa ----------
+print("fim dos testes!", a, b, c, x, y, z);

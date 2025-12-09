@@ -1,0 +1,15 @@
+int x;
+bool controle;
+int x;              // 1. Erro: Redeclaração de variável no mesmo escopo
+
+x = true;           // 2. Erro: Atribuição de tipo incompatível (int = bool)
+controle = x + 10;  // 3. Erro: Atribuição inválida (bool = int)
+
+read(y);            // 4. Erro: Variável não declarada
+
+if (controle) {
+    int interna;
+    interna = 1;
+}
+
+interna = 2;        // 5. Erro: Variável fora de escopo (já foi removida pelo popEscopo)
