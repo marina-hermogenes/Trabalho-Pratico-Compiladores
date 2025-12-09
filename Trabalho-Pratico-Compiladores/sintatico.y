@@ -978,7 +978,7 @@ read
 
         int size = strlen($1.lexema) + strlen($3.lexema) + 10;
         char* code = malloc(size);
-        sprintf(code, "read %s", $3.lexema);
+        sprintf(code, "read %s\n", $3.lexema);
         $$.code = code;
     }
     ;
